@@ -20,6 +20,7 @@ from app.schemas.user import (
     UserCreate,
     UserLogin,
     UserOut,
+    UserUpdate,
     TokenResponse,
     TokenRefreshRequest,
     PasswordChangeRequest,
@@ -201,6 +202,37 @@ async def change_password(
     db.commit()
 
     return {"message": "Password changed successfully"}
+
+
+@router.get("/profile", response_model=UserOut)
+async def get_profile(current_user: User = Depends(get_current_user)) -> UserOut:
+    """Get user profile."""
+    return UserOut.model_validate(current_user)
+
+
+@router.put("/profile", response_model=UserOut)
+async def update_profile(
+    payload: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> UserOut:
+    """Update user profile."""
+    # Reattach user to the new session
+    user = db.query(User).filter(User.id == current_user.id).first()
+    if not user:
+        raise NotFoundError(resource="User", resource_id=current_user.id)
+
+    # Update only provided fields
+    if payload.first_name is not None:
+        user.first_name = payload.first_name
+    if payload.last_name is not None:
+        user.last_name = payload.last_name
+    if payload.profile is not None:
+        user.profile = payload.profile
+
+    db.commit()
+    db.refresh(user)
+    return UserOut.model_validate(user)
 
 
 @router.post("/logout", response_model=dict)

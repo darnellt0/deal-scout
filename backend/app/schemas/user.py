@@ -27,10 +27,10 @@ class UserLogin(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    """Schema for updating user."""
+    """Schema for updating user profile."""
     first_name: Optional[str] = Field(None, max_length=128)
     last_name: Optional[str] = Field(None, max_length=128)
-    profile: Optional[dict] = None
+    profile: Optional[dict] = Field(default=None)
 
 
 class UserOut(BaseModel):
