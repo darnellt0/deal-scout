@@ -6,7 +6,7 @@ from pydantic import Field
 from app.schemas.base import ORMModel, TimestampedModel
 
 
-class MarketplaceAccountOut(ORMModel, TimestampedModel):
+class MarketplaceAccountOut(TimestampedModel):
     """Output schema for marketplace account."""
 
     id: int

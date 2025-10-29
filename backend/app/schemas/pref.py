@@ -7,7 +7,7 @@ from app.schemas.base import ORMModel, TimestampedModel
 from app.core.models import Condition
 
 
-class UserPrefOut(ORMModel, TimestampedModel):
+class UserPrefOut(TimestampedModel):
     """Output schema for user preferences."""
 
     id: int

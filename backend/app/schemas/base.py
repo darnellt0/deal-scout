@@ -15,14 +15,18 @@ class ORMModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class TimestampedModel(ORMModel):
+class TimestampedModel(BaseModel):
     """Base model with timestamp fields."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     created_at: datetime
     updated_at: Optional[datetime] = None
 
 
-class BaseResponse(ORMModel):
+class BaseResponse(BaseModel):
     """Base response model with ID."""
+
+    model_config = ConfigDict(from_attributes=True)
 
     id: Optional[int] = None

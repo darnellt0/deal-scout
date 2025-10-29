@@ -6,7 +6,7 @@ from pydantic import Field
 from app.schemas.base import ORMModel, TimestampedModel
 
 
-class SnapJobOut(ORMModel, TimestampedModel):
+class SnapJobOut(TimestampedModel):
     """Output schema for snap job."""
 
     id: int

@@ -35,7 +35,13 @@ class MyItemUpdate(ORMModel):
     status: Optional[str] = None
 
 
-class MyItemOut(MyItemBase, TimestampedModel):
+class MyItemOut(TimestampedModel):
     """Output schema for my item."""
 
     id: int
+    title: str = Field(..., max_length=255)
+    category: str = Field(..., max_length=120)
+    attributes: Dict = Field(default_factory=dict)
+    condition: Optional[Condition] = None
+    price: float = Field(default=0.0, ge=0)
+    status: str = Field(default="draft", max_length=50)

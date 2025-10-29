@@ -6,7 +6,7 @@ from pydantic import Field
 from app.schemas.base import ORMModel, TimestampedModel
 
 
-class OrderOut(ORMModel, TimestampedModel):
+class OrderOut(TimestampedModel):
     """Output schema for order."""
 
     id: int
