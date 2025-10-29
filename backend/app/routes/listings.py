@@ -4,7 +4,8 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.db import SessionLocal
-from app.core.models import Listing
+from app.core.models import Listing, User
+from app.core.auth import get_current_user, require_admin
 from app.core.errors import NotFoundError, ConflictError
 from app.schemas.listing import ListingOut, ListingCreate, ListingUpdate
 from app.schemas.common import PageResponse, PageMeta
@@ -65,9 +66,11 @@ async def get_listing(listing_id: int, db: Session = Depends(get_db)) -> Listing
 
 @router.post("", response_model=ListingOut, status_code=201)
 async def create_listing(
-    payload: ListingCreate, db: Session = Depends(get_db)
+    payload: ListingCreate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
 ) -> ListingOut:
-    """Create a new marketplace listing."""
+    """Create a new marketplace listing (admin only)."""
     # Check for duplicate source_id
     existing = db.query(Listing).filter(Listing.source_id == payload.source_id).first()
     if existing:
@@ -84,9 +87,12 @@ async def create_listing(
 
 @router.patch("/{listing_id}", response_model=ListingOut)
 async def update_listing(
-    listing_id: int, payload: ListingUpdate, db: Session = Depends(get_db)
+    listing_id: int,
+    payload: ListingUpdate,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
 ) -> ListingOut:
-    """Update a listing."""
+    """Update a listing (admin only)."""
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
         raise NotFoundError(resource="Listing", resource_id=listing_id)
@@ -102,8 +108,12 @@ async def update_listing(
 
 
 @router.delete("/{listing_id}", status_code=204)
-async def delete_listing(listing_id: int, db: Session = Depends(get_db)) -> None:
-    """Delete a listing."""
+async def delete_listing(
+    listing_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_admin),
+) -> None:
+    """Delete a listing (admin only)."""
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
         raise NotFoundError(resource="Listing", resource_id=listing_id)
