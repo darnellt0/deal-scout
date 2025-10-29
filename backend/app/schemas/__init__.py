@@ -1,5 +1,6 @@
 """Pydantic v2 schemas for API serialization and validation."""
 
+from app.schemas.user import UserOut, UserCreate, UserLogin, TokenResponse
 from app.schemas.listing import ListingOut, ListingCreate, ListingUpdate, ListingScoreOut
 from app.schemas.comp import CompOut
 from app.schemas.pref import UserPrefOut, UserPrefUpdate
@@ -12,6 +13,11 @@ from app.schemas.snap_job import SnapJobOut, SnapJobUpdate
 from app.schemas.common import Page, PageMeta, PageResponse
 
 __all__ = [
+    # User & Authentication
+    "UserOut",
+    "UserCreate",
+    "UserLogin",
+    "TokenResponse",
     # Listings
     "ListingOut",
     "ListingCreate",

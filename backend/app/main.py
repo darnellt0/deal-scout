@@ -22,6 +22,7 @@ from app.core.models import Base, Listing, ListingScore
 from app.core.utils import haversine_distance
 from app.core.exception_handlers import register_exception_handlers
 from app.buyer.routes import router as buyer_router
+from app.routes.auth import router as auth_router
 from app.routes.ebay_oauth import router as ebay_oauth_router
 from app.routes.listings import router as listings_router
 from app.routes.my_items import router as my_items_router
@@ -229,6 +230,9 @@ async def public_listings(
                 break
     return results
 
+
+# Authentication routes
+app.include_router(auth_router)
 
 # Core API routes (marketplace data + user content)
 app.include_router(listings_router)
