@@ -52,9 +52,22 @@ class ListingUpdate(ORMModel):
     location: Optional[Dict] = None
 
 
-class ListingOut(ListingBase, TimestampedModel):
+class ListingOut(ORMModel):
     """Output schema for listing."""
 
     id: int
+    source: str = Field(..., max_length=50)
+    source_id: str = Field(..., max_length=120)
+    title: str = Field(..., max_length=255)
+    description: Optional[str] = None
+    price: float = Field(default=0.0, ge=0)
+    condition: Optional[Condition] = None
+    category: Optional[str] = Field(None, max_length=120)
+    url: str = Field(..., max_length=500)
+    thumbnail_url: Optional[str] = Field(None, max_length=500)
+    location: Dict = Field(default_factory=dict)
+    available: bool = True
     last_seen_at: datetime
+    created_at: datetime
+    updated_at: Optional[datetime] = None
     scores: Optional[List[ListingScoreOut]] = None

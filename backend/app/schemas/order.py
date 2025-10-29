@@ -6,7 +6,7 @@ from pydantic import Field
 from app.schemas.base import ORMModel, TimestampedModel
 
 
-class OrderOut(TimestampedModel):
+class OrderOut(ORMModel):
     """Output schema for order."""
 
     id: int
@@ -15,6 +15,8 @@ class OrderOut(TimestampedModel):
     status: str = Field(..., max_length=50)
     total: float = Field(default=0.0, ge=0)
     meta: Dict = Field(default_factory=dict, alias="metadata")
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
 
 class OrderCreate(ORMModel):

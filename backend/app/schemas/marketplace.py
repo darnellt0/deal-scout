@@ -6,13 +6,15 @@ from pydantic import Field
 from app.schemas.base import ORMModel, TimestampedModel
 
 
-class MarketplaceAccountOut(TimestampedModel):
+class MarketplaceAccountOut(ORMModel):
     """Output schema for marketplace account."""
 
     id: int
     platform: str = Field(..., max_length=50)
     connected: bool = False
     credentials: Dict = Field(default_factory=dict)
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
 
 class MarketplaceAccountCreate(ORMModel):

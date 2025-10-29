@@ -30,7 +30,7 @@ class CrossPostUpdate(ORMModel):
     status: Optional[str] = None
 
 
-class CrossPostOut(TimestampedModel):
+class CrossPostOut(ORMModel):
     """Output schema for cross post."""
 
     id: int
@@ -40,3 +40,5 @@ class CrossPostOut(TimestampedModel):
     listing_url: str = Field(..., max_length=500)
     status: str = Field(default="pending", max_length=50)
     meta: Dict = Field(default_factory=dict, alias="metadata")
+    created_at: datetime
+    updated_at: Optional[datetime] = None

@@ -6,7 +6,7 @@ from pydantic import Field
 from app.schemas.base import ORMModel, TimestampedModel
 
 
-class SnapJobOut(TimestampedModel):
+class SnapJobOut(ORMModel):
     """Output schema for snap job."""
 
     id: int
@@ -23,6 +23,8 @@ class SnapJobOut(TimestampedModel):
     suggested_description: Optional[str] = None
     title_suggestion: Optional[str] = Field(None, max_length=255)
     description_suggestion: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
 
 class SnapJobCreate(ORMModel):

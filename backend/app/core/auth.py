@@ -9,10 +9,10 @@ from fastapi.security import HTTPBearer
 from starlette.requests import Request
 import jwt
 from jwt.exceptions import InvalidTokenError
-from passlib.context import CryptContext
+import bcrypt
 from sqlalchemy.orm import Session
 
-from app.core.db import get_session
+from app.core.db import SessionLocal
 from app.core.models import User, UserRole
 
 # Security configuration
@@ -20,9 +20,6 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRY_MINUTES", 60))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_DAYS", 7))
-
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # HTTP Bearer for FastAPI dependency
 security = HTTPBearer()
@@ -47,12 +44,19 @@ class TokenData:
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
-    return pwd_context.hash(password)
+    # Bcrypt has a 72-byte limit, so truncate if needed
+    if len(password.encode()) > 72:
+        password = password[:72]
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(password.encode(), salt).decode()
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
-    return pwd_context.verify(plain_password, hashed_password)
+    # Bcrypt has a 72-byte limit
+    if len(plain_password.encode()) > 72:
+        plain_password = plain_password[:72]
+    return bcrypt.checkpw(plain_password.encode(), hashed_password.encode())
 
 
 def create_access_token(
@@ -89,10 +93,7 @@ def decode_token(token: str) -> Optional[dict]:
         return None
 
 
-async def get_current_user(
-    request: Request,
-    db: Session = Depends(get_session),
-) -> User:
+async def get_current_user(request: Request) -> User:
     """Get current authenticated user from JWT token."""
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
@@ -119,34 +120,36 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = db.query(User).filter(User.id == user_id).first()
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+    # Get database session
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
 
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive",
-        )
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive",
+            )
 
-    return user
+        return user
+    finally:
+        db.close()
 
 
-async def get_current_user_optional(
-    request: Request,
-    db: Session = Depends(get_session),
-) -> Optional[User]:
+async def get_current_user_optional(request: Request) -> Optional[User]:
     """Get current user if authenticated, else None."""
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         return None
 
     try:
-        return await get_current_user(request, db)
+        return await get_current_user(request)
     except HTTPException:
         return None
 

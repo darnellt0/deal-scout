@@ -17,7 +17,7 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     """Schema for user registration."""
-    password: str = Field(..., min_length=8, max_length=255)
+    password: str = Field(..., min_length=8, max_length=72)
 
 
 class UserLogin(BaseModel):
@@ -72,7 +72,7 @@ class TokenRefreshRequest(BaseModel):
 class PasswordChangeRequest(BaseModel):
     """Request to change password."""
     current_password: str = Field(...)
-    new_password: str = Field(..., min_length=8, max_length=255)
+    new_password: str = Field(..., min_length=8, max_length=72)
     confirm_password: str = Field(...)
 
 
@@ -84,4 +84,4 @@ class PasswordResetRequest(BaseModel):
 class PasswordResetConfirm(BaseModel):
     """Confirm password reset with token."""
     token: str = Field(...)
-    new_password: str = Field(..., min_length=8, max_length=255)
+    new_password: str = Field(..., min_length=8, max_length=72)

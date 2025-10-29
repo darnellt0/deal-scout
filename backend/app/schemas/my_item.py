@@ -35,7 +35,7 @@ class MyItemUpdate(ORMModel):
     status: Optional[str] = None
 
 
-class MyItemOut(TimestampedModel):
+class MyItemOut(ORMModel):
     """Output schema for my item."""
 
     id: int
@@ -45,3 +45,5 @@ class MyItemOut(TimestampedModel):
     condition: Optional[Condition] = None
     price: float = Field(default=0.0, ge=0)
     status: str = Field(default="draft", max_length=50)
+    created_at: datetime
+    updated_at: Optional[datetime] = None

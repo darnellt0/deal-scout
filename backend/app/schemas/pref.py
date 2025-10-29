@@ -7,7 +7,7 @@ from app.schemas.base import ORMModel, TimestampedModel
 from app.core.models import Condition
 
 
-class UserPrefOut(TimestampedModel):
+class UserPrefOut(ORMModel):
     """Output schema for user preferences."""
 
     id: int
@@ -19,6 +19,8 @@ class UserPrefOut(TimestampedModel):
     max_price_kitchen_island: float = Field(default=300.0, ge=0)
     keywords_include: List[str] = Field(default_factory=list)
     notify_channels: List[str] = Field(default_factory=lambda: ["email"])
+    created_at: datetime
+    updated_at: Optional[datetime] = None
 
 
 class UserPrefCreate(ORMModel):
