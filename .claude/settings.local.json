@@ -33,7 +33,8 @@
       "Bash(curl:*)",
       "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoxLCJ1c2VybmFtZSI6InRlc3R1c2VyIiwiZW1haWwiOiJ0ZXN0QGV4YW1wbGUuY29tIiwicm9sZSI6ImJ1eWVyIiwiZXhwIjoxNzYxNzE5ODM5fQ.VpL2TWEV8D5qee-al5u-ckQNgaP8dIrCx1sb-HtqV4s\")",
       "Bash(tee:*)",
-      "Read(//c/**)"
+      "Read(//c/**)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo0LCJ1c2VybmFtZSI6InBoYXNldGVzdCIsImVtYWlsIjoicGhhc2V0ZXN0QGV4YW1wbGUuY29tIiwicm9sZSI6ImJ1eWVyIiwiZXhwIjoxNzYxNzIyODk2fQ.I6LuLe0bXjjJmUTR00cqajMOEg9bJlB4fGNvzYYT5Gc\")"
     ],
     "deny": [],
     "ask": []
