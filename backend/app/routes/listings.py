@@ -7,6 +7,7 @@ from app.core.db import SessionLocal
 from app.core.models import Listing, User
 from app.core.auth import get_current_user, require_admin
 from app.core.errors import NotFoundError, ConflictError
+from app.core.search import ListingSearch
 from app.schemas.listing import ListingOut, ListingCreate, ListingUpdate
 from app.schemas.common import PageResponse, PageMeta
 
@@ -120,3 +121,111 @@ async def delete_listing(
 
     db.delete(listing)
     db.commit()
+
+
+@router.get("/search/listings", response_model=PageResponse[ListingOut])
+async def search_listings(
+    q: str = Query(..., description="Search query"),
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    category: Optional[str] = None,
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    min_score: Optional[float] = None,
+    condition: Optional[str] = None,
+) -> PageResponse[ListingOut]:
+    """
+    Full-text search for listings.
+
+    Search across title, description, and category.
+    """
+    offset = (page - 1) * size
+
+    results, total = ListingSearch.search_listings(
+        session=db,
+        query=q,
+        category=category,
+        min_price=min_price,
+        max_price=max_price,
+        min_score=min_score,
+        condition=condition,
+        limit=size,
+        offset=offset,
+    )
+
+    items = [ListingOut.model_validate(listing) for listing, score in results]
+
+    return PageResponse[ListingOut](
+        meta=PageMeta(page=page, size=size, total=total),
+        items=items,
+    )
+
+
+@router.get("/search/advanced", response_model=PageResponse[ListingOut])
+async def advanced_search(
+    keywords: List[str] = Query(
+        ...,
+        description="Keywords that must be present (AND logic)"
+    ),
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    size: int = Query(20, ge=1, le=100),
+    exclude: Optional[List[str]] = Query(
+        None,
+        description="Keywords to exclude (NOT logic)"
+    ),
+    category: Optional[List[str]] = Query(None, description="Categories to search in"),
+    min_price: Optional[float] = None,
+    max_price: Optional[float] = None,
+    min_score: Optional[float] = None,
+    condition: Optional[str] = None,
+) -> PageResponse[ListingOut]:
+    """
+    Advanced search with multiple keywords and exclusions.
+
+    - keywords: List of terms that MUST appear (AND)
+    - exclude: List of terms to exclude (NOT)
+    - category: Categories to search in
+    """
+    offset = (page - 1) * size
+
+    results, total = ListingSearch.search_listings_advanced(
+        session=db,
+        keywords=keywords,
+        exclude_keywords=exclude,
+        min_price=min_price,
+        max_price=max_price,
+        min_score=min_score,
+        categories=category,
+        condition=condition,
+        limit=size,
+        offset=offset,
+    )
+
+    items = [ListingOut.model_validate(listing) for listing, score in results]
+
+    return PageResponse[ListingOut](
+        meta=PageMeta(page=page, size=size, total=total),
+        items=items,
+    )
+
+
+@router.get("/search/suggestions")
+async def search_suggestions(
+    q: str = Query(..., min_length=2, description="Partial search query"),
+    db: Session = Depends(get_db),
+    limit: int = Query(10, ge=1, le=50),
+) -> dict:
+    """
+    Get autocomplete suggestions for search queries.
+
+    Returns suggestions based on categories and titles.
+    """
+    suggestions = ListingSearch.get_suggestions(
+        session=db,
+        partial_query=q,
+        limit=limit,
+    )
+
+    return {"query": q, "suggestions": suggestions}

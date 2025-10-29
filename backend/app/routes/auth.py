@@ -1,8 +1,11 @@
 """Authentication endpoints for user registration, login, and token management."""
 
+import logging
 from datetime import timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
+logger = logging.getLogger(__name__)
 
 from app.core.auth import (
     create_access_token,
@@ -67,6 +70,16 @@ async def register(payload: UserCreate, db: Session = Depends(get_db)) -> TokenR
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # Send welcome email
+    from app.core.email_service import get_email_service
+    email_service = get_email_service()
+    email_sent = email_service.send_welcome_email(
+        to_email=user.email,
+        username=user.username,
+    )
+    if not email_sent:
+        logger.warning(f"Failed to send welcome email to {user.email}")
 
     # Create tokens
     token_data = {
@@ -264,12 +277,20 @@ async def request_password_reset(
     # Create password reset token
     reset_token = create_password_reset_token(user.id, user.email)
 
-    # In production, send this token via email
-    # For testing, return it in response
-    # TODO: Implement email sending service and remove reset_token from response
+    # Send password reset email
+    from app.core.email_service import get_email_service
+    email_service = get_email_service()
+    email_sent = email_service.send_password_reset_email(
+        to_email=user.email,
+        username=user.username,
+        reset_token=reset_token,
+    )
+
+    if not email_sent:
+        logger.warning(f"Failed to send password reset email to {user.email}")
+
     return {
-        "message": "Password reset link has been sent to your email",
-        "reset_token": reset_token,  # Remove in production after email is implemented
+        "message": "If an account exists with that email, a password reset link has been sent"
     }
 
 
@@ -307,12 +328,20 @@ async def send_email_verification(
     # Create email verification token
     verification_token = create_email_verification_token(current_user.id, current_user.email)
 
-    # In production, send this token via email
-    # For testing, return it in response
-    # TODO: Implement email sending service and remove verification_token from response
+    # Send email verification email
+    from app.core.email_service import get_email_service
+    email_service = get_email_service()
+    email_sent = email_service.send_email_verification_email(
+        to_email=current_user.email,
+        username=current_user.username,
+        verification_token=verification_token,
+    )
+
+    if not email_sent:
+        logger.warning(f"Failed to send email verification to {current_user.email}")
+
     return {
-        "message": "Verification link has been sent to your email",
-        "verification_token": verification_token,  # Remove in production after email is implemented
+        "message": "Verification link has been sent to your email"
     }
 
 

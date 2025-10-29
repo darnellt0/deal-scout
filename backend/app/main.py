@@ -30,6 +30,7 @@ from app.routes.orders import router as orders_router
 from app.routes.comps import router as comps_router
 from app.routes.marketplace_accounts import router as marketplace_accounts_router
 from app.routes.notification_preferences import router as notification_preferences_router
+from app.routes.push_notifications import router as push_notifications_router
 from app.seller.post import router as post_router
 from app.seller.snap import router as snap_router
 from app.seller.pricing import router as pricing_router
@@ -190,8 +191,6 @@ async def public_listings(
             session.query(Listing, ListingScore.value)
             .join(ListingScore, Listing.id == ListingScore.listing_id)
             .filter(ListingScore.metric == "deal_score")
-            .order_by(ListingScore.value.desc())
-            .limit(limit * 3)
         )
         if category:
             pattern = f"%{category.lower()}%"
@@ -202,6 +201,7 @@ async def public_listings(
                     Listing.description.ilike(pattern),
                 )
             )
+        query = query.order_by(ListingScore.value.desc()).limit(limit * 3)
         candidates = query.all()
 
         for listing, score in candidates:
@@ -243,6 +243,7 @@ app.include_router(orders_router)
 app.include_router(comps_router)
 app.include_router(marketplace_accounts_router)
 app.include_router(notification_preferences_router)
+app.include_router(push_notifications_router)
 
 # Marketplace and seller routes
 app.include_router(snap_router, prefix="/seller", tags=["seller"])

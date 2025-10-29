@@ -127,7 +127,7 @@ async def save_deal(
         prefs = UserPref(
             user_id=current_user.id,
             max_price_couch=1000,
-            max_price_island=2000,
+            max_price_kitchen_island=2000,
             saved_deals=[],
         )
         db.add(prefs)
@@ -257,29 +257,29 @@ async def get_buyer_preferences(
         return {
             "user_id": current_user.id,
             "max_price_couch": 1000,
-            "max_price_island": 2000,
+            "max_price_kitchen_island": 2000,
             "location": None,
-            "search_radius_mi": 50,
+            "radius_mi": 50,
             "notification_enabled": True,
-            "notification_channels": ["email"],
+            "notify_channels": ["email"],
         }
 
     return {
         "user_id": current_user.id,
         "max_price_couch": prefs.max_price_couch,
-        "max_price_island": prefs.max_price_island,
+        "max_price_kitchen_island": prefs.max_price_kitchen_island,
         "location": prefs.location,
-        "search_radius_mi": prefs.search_radius_mi,
+        "radius_mi": prefs.radius_mi,
         "notification_enabled": prefs.notification_enabled,
-        "notification_channels": prefs.notification_channels or ["email"],
+        "notify_channels": prefs.notify_channels or ["email"],
     }
 
 
 @router.put("/preferences")
 async def update_buyer_preferences(
     max_price_couch: Optional[int] = Query(default=None),
-    max_price_island: Optional[int] = Query(default=None),
-    search_radius_mi: Optional[int] = Query(default=None),
+    max_price_kitchen_island: Optional[int] = Query(default=None),
+    radius_mi: Optional[int] = Query(default=None),
     notification_enabled: Optional[bool] = Query(default=None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -293,10 +293,10 @@ async def update_buyer_preferences(
 
     if max_price_couch is not None:
         prefs.max_price_couch = max_price_couch
-    if max_price_island is not None:
-        prefs.max_price_island = max_price_island
-    if search_radius_mi is not None:
-        prefs.search_radius_mi = search_radius_mi
+    if max_price_kitchen_island is not None:
+        prefs.max_price_kitchen_island = max_price_kitchen_island
+    if radius_mi is not None:
+        prefs.radius_mi = radius_mi
     if notification_enabled is not None:
         prefs.notification_enabled = notification_enabled
 

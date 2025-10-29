@@ -119,7 +119,7 @@ class UserPref(Base):
     __tablename__ = "user_prefs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[str] = mapped_column(String(64), unique=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
     radius_mi: Mapped[int] = mapped_column(Integer, default=50)
     city: Mapped[str] = mapped_column(String(255), default="San Jose, CA")
     min_condition: Mapped[Condition] = mapped_column(
@@ -129,6 +129,10 @@ class UserPref(Base):
     max_price_kitchen_island: Mapped[float] = mapped_column(Float, default=300)
     keywords_include: Mapped[List[str]] = mapped_column(JSON, default=list)
     notify_channels: Mapped[List[str]] = mapped_column(JSON, default=lambda: ["email"])
+    saved_deals: Mapped[List[int]] = mapped_column(JSON, default=list)
+    location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    search_radius_mi: Mapped[int] = mapped_column(Integer, default=50)
+    notification_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
@@ -136,6 +140,7 @@ class Notification(Base):
     __tablename__ = "notifications"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id"), nullable=True)
     channel: Mapped[str] = mapped_column(String(50))
     payload: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -148,6 +153,7 @@ class MyItem(Base):
     __tablename__ = "my_items"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     title: Mapped[str] = mapped_column(String(255))
     category: Mapped[str] = mapped_column(String(120))
     attributes: Mapped[dict] = mapped_column(JSON, default=dict)
@@ -164,10 +170,14 @@ class MarketplaceAccount(Base):
     __tablename__ = "marketplace_accounts"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     platform: Mapped[str] = mapped_column(String(50))
+    account_username: Mapped[str] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     connected: Mapped[bool] = mapped_column(Boolean, default=False)
     credentials: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    last_synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
 class CrossPost(Base):
@@ -199,6 +209,7 @@ class SnapJob(Base):
     __tablename__ = "snap_jobs"
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     status: Mapped[str] = mapped_column(String(50), default="pending")
     source: Mapped[str] = mapped_column(String(50), default="upload")
     input_photos: Mapped[List[str]] = mapped_column(JSON, default=list)
