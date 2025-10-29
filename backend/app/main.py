@@ -28,6 +28,7 @@ from app.routes.listings import router as listings_router
 from app.routes.my_items import router as my_items_router
 from app.routes.orders import router as orders_router
 from app.routes.comps import router as comps_router
+from app.routes.marketplace_accounts import router as marketplace_accounts_router
 from app.seller.post import router as post_router
 from app.seller.snap import router as snap_router
 from app.seller.pricing import router as pricing_router
@@ -239,6 +240,7 @@ app.include_router(listings_router)
 app.include_router(my_items_router)
 app.include_router(orders_router)
 app.include_router(comps_router)
+app.include_router(marketplace_accounts_router)
 
 # Marketplace and seller routes
 app.include_router(snap_router, prefix="/seller", tags=["seller"])
