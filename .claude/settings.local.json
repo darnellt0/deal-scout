@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(if [ -f .env ])",
+      "Bash(then echo \".env exists\")",
+      "Bash(else echo \".env does NOT exist\")",
+      "Bash(fi)",
+      "Bash(docker:*)",
+      "Bash(docker compose:*)",
+      "Bash(python -m py_compile:*)",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(cd:*)",
+      "Bash(python3 -m py_compile \"/c/Users/darne/OneDrive/Documents/Python Scripts/2WayMarketAssistant/deal-scout/backend/app/\"*.py)",
+      "Bash(while read f)",
+      "Bash(do python -m py_compile \"$f\")",
+      "Bash(echo:*)",
+      "Bash(done)",
+      "Bash(cat:*)",
+      "Bash(python:*)",
+      "Bash(npm install:*)",
+      "Bash(npm audit:*)",
+      "Bash(npm run build:*)",
+      "Bash(awk:*)",
+      "Bash(tree:*)",
+      "Bash(python3:*)",
+      "Bash(dir:*)",
+      "Bash(wsl.exe dos2unix:*)",
+      "Bash(curl.exe:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

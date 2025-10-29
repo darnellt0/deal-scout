@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deal-scout-backend"
+version = "0.1.0"
+description = "Deal Scout backend services"
+authors = [{name = "Deal Scout"}]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.23",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.1",
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "celery[redis]>=5.3",
+    "redis>=5.0",
+    "httpx>=0.24",
+    "python-dotenv>=1.0",
+    "pillow>=10.0",
+    "openai>=1.0",
+    "prometheus-client>=0.19",
+    "twilio>=8.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4",
+    "pytest-asyncio>=0.21",
+    "pytest-cov>=4.1",
+    "httpx>=0.24",
+    "black>=23.0",
+    "flake8>=6.0",
+    "mypy>=1.0",
+]
+prod = [
+    "alembic>=1.12",
+    "gunicorn>=21.0",
+    "sentry-sdk>=1.38",
+    "boto3>=1.28",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+addopts = "-p no:cacheprovider"

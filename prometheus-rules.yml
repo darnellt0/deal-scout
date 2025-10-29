@@ -1,0 +1,306 @@
+# Prometheus Alert Rules for Deal Scout
+# Load with: prometheus --config.file=prometheus.yml --alert.rules-files=prometheus-rules.yml
+
+groups:
+  - name: deal_scout
+    interval: 30s
+    rules:
+      # API Health & Performance
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(deal_scout_requests_total{status=~"5.."}[5m])) /
+           sum(rate(deal_scout_requests_total[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: api
+        annotations:
+          summary: "High error rate (> 5%)"
+          description: "API error rate is {{ $value | humanizePercentage }} over 5 minutes"
+          runbook: "https://wiki/runbooks/high-error-rate"
+
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(deal_scout_request_duration_seconds_bucket[5m])) by (le)
+          ) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "High API latency (p95 > 500ms)"
+          description: "API p95 latency is {{ $value | humanizeDuration }}"
+          runbook: "https://wiki/runbooks/high-latency"
+
+      - alert: SlowQueries
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(sqlalchemy_query_duration_seconds_bucket[5m])) by (le)
+          ) > 1.0
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Database query p95 latency is {{ $value | humanizeDuration }}"
+          runbook: "https://wiki/runbooks/slow-queries"
+
+      # Database Health
+      - alert: DatabaseUnreachable
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "PostgreSQL database unreachable"
+          description: "Cannot connect to PostgreSQL database"
+          runbook: "https://wiki/runbooks/database-unreachable"
+
+      - alert: DatabaseConnectionPoolExhausted
+        expr: |
+          sqlalchemy_pool_size{job="deal-scout"} > 0.9 * sqlalchemy_pool_max_size{job="deal-scout"}
+        for: 5m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Database connection pool nearing limit"
+          description: "{{ $value | humanizePercentage }} of connections in use"
+          runbook: "https://wiki/runbooks/database-pool"
+
+      - alert: HighDatabaseConnections
+        expr: sum(sqlalchemy_active_connections{job="deal-scout"}) > 100
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "High number of active database connections"
+          description: "{{ $value }} active connections"
+
+      # Redis / Cache Health
+      - alert: RedisUnreachable
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis cache unreachable"
+          description: "Cannot connect to Redis cache"
+          runbook: "https://wiki/runbooks/redis-unreachable"
+
+      - alert: HighRedisMemoryUsage
+        expr: |
+          (redis_memory_used_bytes{job="redis"} /
+           redis_memory_max_bytes{job="redis"}) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Redis memory usage > 90%"
+          description: "Redis memory is {{ $value | humanizePercentage }} full"
+          runbook: "https://wiki/runbooks/redis-memory"
+
+      # Task Queue Health
+      - alert: HighQueueDepth
+        expr: redis_queue_length > 1000
+        for: 10m
+        labels:
+          severity: warning
+          component: tasks
+        annotations:
+          summary: "Celery task queue has {{ $value }} pending tasks"
+          description: "Task queue is backing up. Check worker health."
+          runbook: "https://wiki/runbooks/high-queue-depth"
+
+      - alert: TaskQueueStuck
+        expr: |
+          increase(celery_task_success_total[1h]) == 0
+          and
+          redis_queue_length > 100
+        for: 1h
+        labels:
+          severity: critical
+          component: tasks
+        annotations:
+          summary: "Celery task queue appears stuck"
+          description: "No tasks completed in 1 hour with {{ $value }} in queue"
+          runbook: "https://wiki/runbooks/task-queue-stuck"
+
+      - alert: HighTaskFailureRate
+        expr: |
+          (sum(rate(celery_task_failures_total[5m])) /
+           sum(rate(celery_task_total[5m]))) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: tasks
+        annotations:
+          summary: "High task failure rate (> 10%)"
+          description: "Celery tasks are failing at rate {{ $value | humanizePercentage }}"
+          runbook: "https://wiki/runbooks/task-failures"
+
+      # System Resources
+      - alert: HighCPUUsage
+        expr: |
+          (1 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)))
+          > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High CPU usage (> 80%)"
+          description: "CPU usage is {{ $value | humanizePercentage }}"
+
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+          > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "High memory usage (> 85%)"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      - alert: LowDiskSpace
+        expr: |
+          (node_filesystem_avail_bytes / node_filesystem_size_bytes)
+          < 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Low disk space (< 10% free)"
+          description: "{{ $value | humanizePercentage }} disk space available"
+          runbook: "https://wiki/runbooks/disk-full"
+
+      - alert: DiskFull
+        expr: |
+          (node_filesystem_avail_bytes / node_filesystem_size_bytes)
+          < 0.05
+        for: 5m
+        labels:
+          severity: critical
+          component: system
+        annotations:
+          summary: "Disk nearly full (< 5% free)"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining"
+          runbook: "https://wiki/runbooks/disk-critical"
+
+      # Service Availability
+      - alert: MultipleBackendInstancesDown
+        expr: |
+          count(up{job="backend"} == 1) < 2
+        for: 2m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Multiple backend instances down"
+          description: "Only {{ $value }} backend instances running (target: 3)"
+          runbook: "https://wiki/runbooks/backend-instances"
+
+      - alert: BackendInstanceDown
+        expr: up{job="backend"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: api
+        annotations:
+          summary: "Backend instance {{ $labels.instance }} is down"
+          description: "Backend instance has been down for 2 minutes"
+          runbook: "https://wiki/runbooks/backend-down"
+
+      - alert: WorkerInstanceDown
+        expr: up{job="worker"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          component: tasks
+        annotations:
+          summary: "Worker instance {{ $labels.instance }} is down"
+          description: "Celery worker has been down for 5 minutes"
+          runbook: "https://wiki/runbooks/worker-down"
+
+      - alert: BeatSchedulerDown
+        expr: up{job="beat"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          component: tasks
+        annotations:
+          summary: "Beat scheduler is down"
+          description: "Celery Beat scheduler has been offline"
+          runbook: "https://wiki/runbooks/beat-down"
+
+      # Marketplace Integration Health
+      - alert: eBayIntegrationError
+        expr: |
+          increase(ebay_api_errors_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: integrations
+        annotations:
+          summary: "eBay API errors detected"
+          description: "{{ $value }} eBay API errors in last 5 minutes"
+          runbook: "https://wiki/runbooks/ebay-errors"
+
+      - alert: CraigslistScanFailed
+        expr: |
+          time() - craigslist_last_scan_timestamp > 600
+        for: 10m
+        labels:
+          severity: warning
+          component: integrations
+        annotations:
+          summary: "Craigslist scan not running"
+          description: "Last Craigslist scan was > 10 minutes ago"
+          runbook: "https://wiki/runbooks/craigslist-scan"
+
+      # Notification Delivery
+      - alert: EmailNotificationFailures
+        expr: |
+          (sum(rate(notification_failures_total{channel="email"}[5m])) /
+           sum(rate(notification_total{channel="email"}[5m]))) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          component: notifications
+        annotations:
+          summary: "Email notification failures (> 10%)"
+          description: "{{ $value | humanizePercentage }} of emails failing"
+          runbook: "https://wiki/runbooks/email-failures"
+
+      - alert: SMSNotificationFailures
+        expr: |
+          (sum(rate(notification_failures_total{channel="sms"}[5m])) /
+           sum(rate(notification_total{channel="sms"}[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          component: notifications
+        annotations:
+          summary: "SMS notification failures (> 5%)"
+          description: "{{ $value | humanizePercentage }} of SMS failing"
+          runbook: "https://wiki/runbooks/sms-failures"
+
+      # Service Deployment Issues
+      - alert: ServiceRestarting
+        expr: increase(process_start_time_seconds[5m]) > 0
+        for: 0m
+        labels:
+          severity: info
+          component: platform
+        annotations:
+          summary: "{{ $labels.job }} restarted"
+          description: "{{ $labels.instance }} restart detected"

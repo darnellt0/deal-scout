@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: deal-scout
+  namespace: deal-scout
+  labels:
+    app: deal-scout
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: deal-scout
+rules:
+# Allow reading pod and service information
+- apiGroups: [""]
+  resources: ["pods", "services"]
+  verbs: ["get", "list", "watch"]
+# Allow reading config maps
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list"]
+# Allow reading secrets (for the service account)
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get"]
+# Allow reading persistent volumes
+- apiGroups: [""]
+  resources: ["persistentvolumes", "persistentvolumeclaims"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: deal-scout
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: deal-scout
+subjects:
+- kind: ServiceAccount
+  name: deal-scout
+  namespace: deal-scout
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: deal-scout
+  namespace: deal-scout
+rules:
+# Allow managing deployments and pods in this namespace
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+# Allow managing services and ingresses
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: deal-scout
+  namespace: deal-scout
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: deal-scout
+subjects:
+- kind: ServiceAccount
+  name: deal-scout
+  namespace: deal-scout

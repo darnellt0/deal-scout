@@ -1,0 +1,108 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beat
+  namespace: deal-scout
+  labels:
+    app: beat
+spec:
+  replicas: 1  # Only one beat scheduler
+  strategy:
+    type: Recreate  # Don't allow simultaneous instances
+  selector:
+    matchLabels:
+      app: beat
+  template:
+    metadata:
+      labels:
+        app: beat
+    spec:
+      serviceAccountName: deal-scout
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      containers:
+      - name: beat
+        image: deal-scout-backend:latest
+        imagePullPolicy: Always
+        command:
+        - celery
+        - -A
+        - app.worker.celery_app
+        - beat
+        - -l
+        - info
+        - --scheduler
+        - celery.beat:PersistentScheduler
+
+        env:
+        # From Secrets
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: deal-scout-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: deal-scout-secrets
+              key: REDIS_URL
+
+        # From ConfigMap
+        - name: APP_TIMEZONE
+          valueFrom:
+            configMapKeyRef:
+              name: deal-scout-config
+              key: APP_TIMEZONE
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: deal-scout-config
+              key: LOG_LEVEL
+
+        # Standard settings
+        - name: PYTHONUNBUFFERED
+          value: "1"
+
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+        - name: logs
+          mountPath: /var/log/deal-scout
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: beat-pvc
+      - name: logs
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: beat-pvc
+  namespace: deal-scout
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

@@ -1,0 +1,162 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: deal-scout
+  labels:
+    app: worker
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      serviceAccountName: deal-scout
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      containers:
+      - name: worker
+        image: deal-scout-backend:latest
+        imagePullPolicy: Always
+        command:
+        - celery
+        - -A
+        - app.worker.celery_app
+        - worker
+        - -l
+        - info
+        - --concurrency=4
+        - --max-tasks-per-child=100
+
+        env:
+        # From Secrets
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: deal-scout-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: deal-scout-secrets
+              key: REDIS_URL
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: deal-scout-secrets
+              key: OPENAI_API_KEY
+        - name: EBAY_APP_ID
+          valueFrom:
+            secretKeyRef:
+              name: deal-scout-secrets
+              key: EBAY_APP_ID
+        - name: EBAY_CERT_ID
+          valueFrom:
+            secretKeyRef:
+              name: deal-scout-secrets
+              key: EBAY_CERT_ID
+        - name: EBAY_DEV_ID
+          valueFrom:
+            secretKeyRef:
+              name: deal-scout-secrets
+              key: EBAY_DEV_ID
+
+        # From ConfigMap
+        - name: APP_TIMEZONE
+          valueFrom:
+            configMapKeyRef:
+              name: deal-scout-config
+              key: APP_TIMEZONE
+        - name: DEMO_MODE
+          valueFrom:
+            configMapKeyRef:
+              name: deal-scout-config
+              key: DEMO_MODE
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: deal-scout-config
+              key: LOG_LEVEL
+
+        # Standard settings
+        - name: PYTHONUNBUFFERED
+          value: "1"
+
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 2Gi
+
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+        - name: logs
+          mountPath: /var/log/deal-scout
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+            - ALL
+
+      volumes:
+      - name: data
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - worker
+              topologyKey: kubernetes.io/hostname
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: worker-hpa
+  namespace: deal-scout
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

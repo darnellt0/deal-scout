@@ -1,0 +1,29 @@
+*** Begin Patch
+*** Update File: deal-scout/backend/app/tasks/scan_all.py
+@@
+-            if instant:
+-                subject = f"[Deal Scout] Free find: {match.title}"
+-                html = _compose_email(match)
+-                send_email(subject, html)
+-                send_discord(f"Free deal spotted: {match.title}", embed={"title": match.title, "url": match.url})
+-                send_sms(f"Free: {match.title} ({match.distance_mi} mi) {match.url}")
+-                notification_status = "sent"
+-                sent_at = datetime.utcnow()
+-                channel = "instant"
++            if instant:
++                subject = f"[Deal Scout] Free find: {match.title}"
++                html = _compose_email(match)
++                send_email(subject, html)
++                send_discord(
++                    f"Free deal spotted: {match.title}",
++                    embed={"title": match.title, "url": match.url},
++                )
++                send_sms(f"Free: {match.title} ({match.distance_mi} mi) {match.url}")
++                notification_status = "sent"
++                sent_at = datetime.utcnow()
++                channel = "instant"
++            elif match.deal_score >= 75:
++                channel = "digest"
++            else:
++                continue
+*** End Patch
