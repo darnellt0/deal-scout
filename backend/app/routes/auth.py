@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 from app.core.auth import (
     create_access_token,
     create_refresh_token,
+    create_password_reset_token,
+    create_email_verification_token,
     decode_token,
     hash_password,
     verify_password,
@@ -24,6 +26,9 @@ from app.schemas.user import (
     TokenResponse,
     TokenRefreshRequest,
     PasswordChangeRequest,
+    PasswordResetRequest,
+    PasswordResetConfirm,
+    EmailVerification,
 )
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -241,3 +246,101 @@ async def logout(current_user: User = Depends(get_current_user)) -> dict:
     # Note: JWT tokens are stateless, so logout is primarily client-side
     # In production, you might add the token to a blacklist
     return {"message": "Logged out successfully"}
+
+
+@router.post("/request-password-reset", response_model=dict)
+async def request_password_reset(
+    payload: PasswordResetRequest, db: Session = Depends(get_db)
+) -> dict:
+    """Request a password reset token via email."""
+    # Find user by email
+    user = db.query(User).filter(User.email == payload.email).first()
+
+    # Don't reveal if email exists (security best practice)
+    # But still generate and return token for testing in development
+    if not user:
+        return {"message": "If an account exists with that email, a reset link will be sent"}
+
+    # Create password reset token
+    reset_token = create_password_reset_token(user.id, user.email)
+
+    # In production, send this token via email
+    # For testing, return it in response
+    # TODO: Implement email sending service and remove reset_token from response
+    return {
+        "message": "Password reset link has been sent to your email",
+        "reset_token": reset_token,  # Remove in production after email is implemented
+    }
+
+
+@router.post("/confirm-password-reset", response_model=dict)
+async def confirm_password_reset(
+    payload: PasswordResetConfirm, db: Session = Depends(get_db)
+) -> dict:
+    """Confirm password reset with token."""
+    # Decode password reset token
+    token_data = decode_token(payload.token)
+    if not token_data or token_data.get("type") != "password_reset":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired password reset token",
+        )
+
+    # Get user
+    user_id = token_data.get("user_id")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise NotFoundError(resource="User", resource_id=user_id)
+
+    # Update password
+    user.password_hash = hash_password(payload.new_password)
+    db.commit()
+
+    return {"message": "Password has been reset successfully"}
+
+
+@router.post("/send-email-verification", response_model=dict)
+async def send_email_verification(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> dict:
+    """Send email verification token to current user."""
+    # Create email verification token
+    verification_token = create_email_verification_token(current_user.id, current_user.email)
+
+    # In production, send this token via email
+    # For testing, return it in response
+    # TODO: Implement email sending service and remove verification_token from response
+    return {
+        "message": "Verification link has been sent to your email",
+        "verification_token": verification_token,  # Remove in production after email is implemented
+    }
+
+
+@router.post("/verify-email", response_model=EmailVerification)
+async def verify_email(payload: PasswordResetConfirm, db: Session = Depends(get_db)) -> EmailVerification:
+    """Verify email with verification token."""
+    # Decode email verification token
+    token_data = decode_token(payload.token)
+    if not token_data or token_data.get("type") != "email_verification":
+        return EmailVerification(
+            verified=False,
+            message="Invalid or expired email verification token",
+        )
+
+    # Get user
+    user_id = token_data.get("user_id")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return EmailVerification(
+            verified=False,
+            message="User not found",
+        )
+
+    # Mark email as verified
+    user.is_verified = True
+    db.commit()
+
+    return EmailVerification(
+        verified=True,
+        message="Email has been verified successfully",
+    )

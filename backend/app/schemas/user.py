@@ -85,3 +85,9 @@ class PasswordResetConfirm(BaseModel):
     """Confirm password reset with token."""
     token: str = Field(...)
     new_password: str = Field(..., min_length=8, max_length=72)
+
+
+class EmailVerification(BaseModel):
+    """Email verification response."""
+    verified: bool = Field(...)
+    message: str = Field(...)

@@ -20,6 +20,7 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRY_MINUTES", 60))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("JWT_REFRESH_DAYS", 7))
+PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_PASSWORD_RESET_MINUTES", 30))
 
 # HTTP Bearer for FastAPI dependency
 security = HTTPBearer()
@@ -80,6 +81,32 @@ def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def create_password_reset_token(user_id: int, email: str) -> str:
+    """Create a JWT token for password reset."""
+    to_encode = {
+        "user_id": user_id,
+        "email": email,
+        "type": "password_reset",
+    }
+    expire = datetime.now(timezone.utc) + timedelta(minutes=PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+
+def create_email_verification_token(user_id: int, email: str) -> str:
+    """Create a JWT token for email verification."""
+    to_encode = {
+        "user_id": user_id,
+        "email": email,
+        "type": "email_verification",
+    }
+    expire = datetime.now(timezone.utc) + timedelta(days=7)  # 7 days for email verification
+    to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
