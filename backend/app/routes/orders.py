@@ -1,10 +1,11 @@
 """API routes for orders."""
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.db import SessionLocal
 from app.core.models import Order
+from app.core.errors import NotFoundError
 from app.schemas.order import OrderOut, OrderCreate, OrderUpdate
 from app.schemas.common import PageResponse, PageMeta
 
@@ -48,7 +49,7 @@ async def get_order(order_id: int, db: Session = Depends(get_db)) -> OrderOut:
     """Get a specific order by ID."""
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
-        raise HTTPException(status_code=404, detail=f"Order {order_id} not found")
+        raise NotFoundError(resource="Order", resource_id=order_id)
     return OrderOut.model_validate(order)
 
 
@@ -71,7 +72,7 @@ async def update_order(
     """Update an order."""
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
-        raise HTTPException(status_code=404, detail=f"Order {order_id} not found")
+        raise NotFoundError(resource="Order", resource_id=order_id)
 
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -87,7 +88,7 @@ async def delete_order(order_id: int, db: Session = Depends(get_db)) -> None:
     """Delete an order."""
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
-        raise HTTPException(status_code=404, detail=f"Order {order_id} not found")
+        raise NotFoundError(resource="Order", resource_id=order_id)
 
     db.delete(order)
     db.commit()

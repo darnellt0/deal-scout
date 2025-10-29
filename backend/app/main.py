@@ -20,6 +20,7 @@ from app.config import get_settings
 from app.core.db import get_session, engine
 from app.core.models import Base, Listing, ListingScore
 from app.core.utils import haversine_distance
+from app.core.exception_handlers import register_exception_handlers
 from app.buyer.routes import router as buyer_router
 from app.routes.ebay_oauth import router as ebay_oauth_router
 from app.routes.listings import router as listings_router
@@ -77,6 +78,9 @@ async def lifespan(_: FastAPI):
 settings = get_settings()
 
 app = FastAPI(title="Deal Scout API", version="0.1.0", lifespan=lifespan)
+
+# Register exception handlers
+register_exception_handlers(app)
 
 app.add_middleware(
     CORSMiddleware,

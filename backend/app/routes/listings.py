@@ -1,10 +1,11 @@
 """API routes for marketplace listings."""
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.db import SessionLocal
 from app.core.models import Listing
+from app.core.errors import NotFoundError, ConflictError
 from app.schemas.listing import ListingOut, ListingCreate, ListingUpdate
 from app.schemas.common import PageResponse, PageMeta
 
@@ -58,7 +59,7 @@ async def get_listing(listing_id: int, db: Session = Depends(get_db)) -> Listing
     """Get a specific listing by ID."""
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
-        raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
+        raise NotFoundError(resource="Listing", resource_id=listing_id)
     return ListingOut.model_validate(listing)
 
 
@@ -70,9 +71,8 @@ async def create_listing(
     # Check for duplicate source_id
     existing = db.query(Listing).filter(Listing.source_id == payload.source_id).first()
     if existing:
-        raise HTTPException(
-            status_code=409,
-            detail=f"Listing with source_id '{payload.source_id}' already exists",
+        raise ConflictError(
+            message=f"Listing with source_id '{payload.source_id}' already exists"
         )
 
     listing = Listing(**payload.model_dump())
@@ -89,7 +89,7 @@ async def update_listing(
     """Update a listing."""
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
-        raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
+        raise NotFoundError(resource="Listing", resource_id=listing_id)
 
     # Update only provided fields
     update_data = payload.model_dump(exclude_unset=True)
@@ -106,7 +106,7 @@ async def delete_listing(listing_id: int, db: Session = Depends(get_db)) -> None
     """Delete a listing."""
     listing = db.query(Listing).filter(Listing.id == listing_id).first()
     if not listing:
-        raise HTTPException(status_code=404, detail=f"Listing {listing_id} not found")
+        raise NotFoundError(resource="Listing", resource_id=listing_id)
 
     db.delete(listing)
     db.commit()

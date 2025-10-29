@@ -28,7 +28,9 @@
       "Bash(wsl.exe dos2unix:*)",
       "Bash(curl.exe:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git tag:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

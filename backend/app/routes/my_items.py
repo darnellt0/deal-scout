@@ -1,10 +1,11 @@
 """API routes for user's items."""
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.db import SessionLocal
 from app.core.models import MyItem
+from app.core.errors import NotFoundError
 from app.schemas.my_item import MyItemOut, MyItemCreate, MyItemUpdate
 from app.schemas.common import PageResponse, PageMeta
 
@@ -51,7 +52,7 @@ async def get_my_item(item_id: int, db: Session = Depends(get_db)) -> MyItemOut:
     """Get a specific item by ID."""
     item = db.query(MyItem).filter(MyItem.id == item_id).first()
     if not item:
-        raise HTTPException(status_code=404, detail=f"Item {item_id} not found")
+        raise NotFoundError(resource="MyItem", resource_id=item_id)
     return MyItemOut.model_validate(item)
 
 
@@ -74,7 +75,7 @@ async def update_my_item(
     """Update an item."""
     item = db.query(MyItem).filter(MyItem.id == item_id).first()
     if not item:
-        raise HTTPException(status_code=404, detail=f"Item {item_id} not found")
+        raise NotFoundError(resource="MyItem", resource_id=item_id)
 
     update_data = payload.model_dump(exclude_unset=True)
     for field, value in update_data.items():
@@ -90,7 +91,7 @@ async def delete_my_item(item_id: int, db: Session = Depends(get_db)) -> None:
     """Delete an item."""
     item = db.query(MyItem).filter(MyItem.id == item_id).first()
     if not item:
-        raise HTTPException(status_code=404, detail=f"Item {item_id} not found")
+        raise NotFoundError(resource="MyItem", resource_id=item_id)
 
     db.delete(item)
     db.commit()

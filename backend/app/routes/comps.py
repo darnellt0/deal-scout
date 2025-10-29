@@ -1,10 +1,11 @@
 """API routes for comparable pricing data."""
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.db import SessionLocal
 from app.core.models import Comp
+from app.core.errors import NotFoundError
 from app.schemas.comp import CompOut, CompCreate
 from app.schemas.common import PageResponse, PageMeta
 
@@ -53,9 +54,7 @@ async def get_comps_by_category(
     """Get comps for a specific category."""
     comps = db.query(Comp).filter(Comp.category == category).all()
     if not comps:
-        raise HTTPException(
-            status_code=404, detail=f"No comps found for category '{category}'"
-        )
+        raise NotFoundError(resource="Comps", resource_id=category)
     return [CompOut.model_validate(comp) for comp in comps]
 
 
@@ -64,7 +63,7 @@ async def get_comp(comp_id: int, db: Session = Depends(get_db)) -> CompOut:
     """Get a specific comp by ID."""
     comp = db.query(Comp).filter(Comp.id == comp_id).first()
     if not comp:
-        raise HTTPException(status_code=404, detail=f"Comp {comp_id} not found")
+        raise NotFoundError(resource="Comp", resource_id=comp_id)
     return CompOut.model_validate(comp)
 
 
@@ -85,7 +84,7 @@ async def delete_comp(comp_id: int, db: Session = Depends(get_db)) -> None:
     """Delete a comp entry."""
     comp = db.query(Comp).filter(Comp.id == comp_id).first()
     if not comp:
-        raise HTTPException(status_code=404, detail=f"Comp {comp_id} not found")
+        raise NotFoundError(resource="Comp", resource_id=comp_id)
 
     db.delete(comp)
     db.commit()
