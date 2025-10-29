@@ -4,7 +4,8 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.db import SessionLocal
-from app.core.models import Comp
+from app.core.models import Comp, User
+from app.core.auth import get_current_user
 from app.core.errors import NotFoundError
 from app.schemas.comp import CompOut, CompCreate
 from app.schemas.common import PageResponse, PageMeta
@@ -28,8 +29,9 @@ async def list_comps(
     size: int = Query(20, ge=1, le=100),
     category: Optional[str] = None,
     source: Optional[str] = None,
+    _: User = Depends(get_current_user),
 ) -> PageResponse[CompOut]:
-    """List comparable pricing data."""
+    """List comparable pricing data (authenticated users only)."""
     query = db.query(Comp)
 
     if category:
