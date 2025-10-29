@@ -22,6 +22,10 @@ from app.core.models import Base, Listing, ListingScore
 from app.core.utils import haversine_distance
 from app.buyer.routes import router as buyer_router
 from app.routes.ebay_oauth import router as ebay_oauth_router
+from app.routes.listings import router as listings_router
+from app.routes.my_items import router as my_items_router
+from app.routes.orders import router as orders_router
+from app.routes.comps import router as comps_router
 from app.seller.post import router as post_router
 from app.seller.snap import router as snap_router
 from app.seller.pricing import router as pricing_router
@@ -222,6 +226,13 @@ async def public_listings(
     return results
 
 
+# Core API routes (marketplace data + user content)
+app.include_router(listings_router)
+app.include_router(my_items_router)
+app.include_router(orders_router)
+app.include_router(comps_router)
+
+# Marketplace and seller routes
 app.include_router(snap_router, prefix="/seller", tags=["seller"])
 app.include_router(post_router, prefix="/seller", tags=["seller"])
 app.include_router(pricing_router, prefix="/seller", tags=["seller"])
