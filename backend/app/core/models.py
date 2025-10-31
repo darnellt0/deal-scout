@@ -171,10 +171,14 @@ class MarketplaceAccount(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    platform: Mapped[str] = mapped_column(String(50))
+    marketplace: Mapped[str] = mapped_column(String(50), index=True)
+    marketplace_account_id: Mapped[Optional[str]] = mapped_column(String(255))
     account_username: Mapped[str] = mapped_column(String(255))
+    access_token: Mapped[Optional[str]] = mapped_column(Text)
+    refresh_token: Mapped[Optional[str]] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     connected: Mapped[bool] = mapped_column(Boolean, default=False)
+    connected_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     credentials: Mapped[dict] = mapped_column(JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_synced_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
@@ -223,6 +227,108 @@ class SnapJob(Base):
     suggested_description: Mapped[Optional[str]] = mapped_column(Text)
     title_suggestion: Mapped[Optional[str]] = mapped_column(String(255))
     description_suggestion: Mapped[Optional[str]] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+# ============================================================================
+# PHASE 7: INTELLIGENT NOTIFICATIONS & DEAL DISCOVERY
+# ============================================================================
+
+
+class DealAlertRule(Base):
+    """User-created rules for custom deal alerts and notifications."""
+    __tablename__ = "deal_alert_rules"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    name: Mapped[str] = mapped_column(String(255))  # e.g., "Budget Gaming PC"
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+
+    # Matching Criteria
+    keywords: Mapped[List[str]] = mapped_column(JSON, default=list)  # OR logic
+    exclude_keywords: Mapped[List[str]] = mapped_column(JSON, default=list)  # NOT logic
+    categories: Mapped[List[str]] = mapped_column(JSON, default=list)  # OR logic
+    condition: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # e.g., "good"
+
+    # Price Criteria
+    min_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    max_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    # Location Criteria
+    location: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    radius_mi: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # Deal Score Criteria (0.0 to 1.0)
+    min_deal_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    # Notification Settings
+    notification_channels: Mapped[List[str]] = mapped_column(JSON, default=lambda: ["email"])
+
+    # Metadata
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    last_triggered_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class NotificationPreferences(Base):
+    """User notification preferences and settings."""
+    __tablename__ = "notification_preferences"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True)
+
+    # Notification Channels
+    channels: Mapped[List[str]] = mapped_column(JSON, default=lambda: ["email"])
+
+    # Frequency Settings
+    frequency: Mapped[str] = mapped_column(String(50), default="immediate")  # immediate, daily, weekly
+    digest_time: Mapped[str] = mapped_column(String(5), default="09:00")  # HH:MM format
+
+    # Quiet Hours (no notifications)
+    quiet_hours_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    quiet_hours_start: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)  # HH:MM
+    quiet_hours_end: Mapped[Optional[str]] = mapped_column(String(5), nullable=True)    # HH:MM
+
+    # Category Filters
+    category_filters: Mapped[List[str]] = mapped_column(JSON, default=list)
+
+    # Rate Limiting
+    max_per_day: Mapped[int] = mapped_column(Integer, default=10)
+
+    # Phone Number for SMS
+    phone_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    phone_verified: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Discord Webhook
+    discord_webhook_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # Status
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class WatchlistItem(Base):
+    """User's watchlist items for price tracking."""
+    __tablename__ = "watchlist_items"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id"), index=True)
+
+    # Price tracking
+    price_alert_threshold: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    alert_sent: Mapped[bool] = mapped_column(Boolean, default=False)
+    last_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow

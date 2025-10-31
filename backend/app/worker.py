@@ -33,6 +33,15 @@ celery_app.conf.update(
             "task": "app.tasks.notify.send_notifications",
             "schedule": crontab(minute=0),
         },
+        # Phase 7: Deal Alerts
+        "check-deal-alerts-every-30-min": {
+            "task": "check_all_deal_alerts",
+            "schedule": 1800.0,  # 30 minutes
+        },
+        "check-price-drops-hourly": {
+            "task": "check_price_drops",
+            "schedule": 3600.0,  # 1 hour
+        },
     },
 )
 

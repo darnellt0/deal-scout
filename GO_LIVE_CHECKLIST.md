@@ -145,7 +145,7 @@ This checklist will guide you through deploying Deal Scout to production.
   DEMO_MODE=false              # Disable demo mode
   APP_TIMEZONE=America/Los_Angeles
   LOG_LEVEL=INFO              # Or WARNING in production
-  CORS_ORIGINS=https://yourdomain.com
+  CORS_ORIGINS=https://elevatedmovements.com
   ```
 
 - [ ] **Update API credentials:**
@@ -163,7 +163,7 @@ This checklist will guide you through deploying Deal Scout to production.
   SMTP_PORT=587
   SMTP_USER=apikey
   SMTP_PASSWORD=SG.xxx...
-  EMAIL_FROM=noreply@yourdomain.com
+  EMAIL_FROM=noreply@elevatedmovements.com
 
   # S3 (if using)
   AWS_REGION=us-west-2
@@ -266,13 +266,13 @@ docker push yourreg/deal-scout-frontend:latest
 ### Health Checks
 - [ ] **Backend API is responding**
   ```bash
-  curl https://api.yourdomain.com/health
+  curl https://api.elevatedmovements.com/health
   # Expected: {"status": "healthy", "database": "ok", "redis": "ok"}
   ```
 
 - [ ] **Frontend is loading**
   ```bash
-  curl https://yourdomain.com/
+  curl https://elevatedmovements.com/
   # Check for HTML response
   ```
 
@@ -291,14 +291,14 @@ docker push yourreg/deal-scout-frontend:latest
 ### Functional Tests
 - [ ] **API endpoints respond correctly**
   ```bash
-  curl https://api.yourdomain.com/listings
-  curl https://api.yourdomain.com/metrics
+  curl https://api.elevatedmovements.com/listings
+  curl https://api.elevatedmovements.com/metrics
   ```
 
 - [ ] **Frontend routes load**
-  - [ ] Home page: https://yourdomain.com/
-  - [ ] Buyer dashboard: https://yourdomain.com/buyer
-  - [ ] Seller Snap Studio: https://yourdomain.com/seller
+  - [ ] Home page: https://elevatedmovements.com/
+  - [ ] Buyer dashboard: https://elevatedmovements.com/buyer
+  - [ ] Seller Snap Studio: https://elevatedmovements.com/seller
 
 - [ ] **Database is populated** (optional: seed demo data)
   ```bash

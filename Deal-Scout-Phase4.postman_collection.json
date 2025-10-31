@@ -1,0 +1,1089 @@
+{
+  "info": {
+    "name": "Deal Scout - Phase 4 API",
+    "description": "Complete Phase 4 testing collection for Deal Scout marketplace API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser{{$randomInt}}\",\n  \"email\": \"test{{$randomInt}}@example.com\",\n  \"password\": \"TestPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"password\": \"TestPassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer - Deals",
+      "item": [
+        {
+          "name": "List All Deals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/deals?limit=10&min_score=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "deals"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "min_score",
+                  "value": "5"
+                },
+                {
+                  "key": "category",
+                  "value": "furniture",
+                  "disabled": true
+                },
+                {
+                  "key": "max_price",
+                  "value": "1000",
+                  "disabled": true
+                },
+                {
+                  "key": "condition",
+                  "value": "good",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Saved Deals",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/deals/saved",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "deals",
+                "saved"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Save Deal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/deals/1/save",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "deals",
+                "1",
+                "save"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Unsave Deal",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/deals/1/save",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "deals",
+                "1",
+                "save"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer - Notifications",
+      "item": [
+        {
+          "name": "List Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/notifications?limit=20&status_filter=unread",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                },
+                {
+                  "key": "status_filter",
+                  "value": "unread",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Notification",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/notifications/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "notifications",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/notifications/1/mark-read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "notifications",
+                "1",
+                "mark-read"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Buyer - Preferences",
+      "item": [
+        {
+          "name": "Get Preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/preferences",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "preferences"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Preferences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/preferences?max_price_couch=800&search_radius_mi=25&notification_enabled=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "preferences"
+              ],
+              "query": [
+                {
+                  "key": "max_price_couch",
+                  "value": "800"
+                },
+                {
+                  "key": "search_radius_mi",
+                  "value": "25"
+                },
+                {
+                  "key": "notification_enabled",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Notification Preferences",
+      "item": [
+        {
+          "name": "Get Preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notification-preferences",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notification-preferences"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Preferences",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notification-preferences?email_notifications=true&notification_frequency=daily_digest&deal_alert_min_score=8.0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notification-preferences"
+              ],
+              "query": [
+                {
+                  "key": "email_notifications",
+                  "value": "true"
+                },
+                {
+                  "key": "notification_frequency",
+                  "value": "daily_digest"
+                },
+                {
+                  "key": "deal_alert_min_score",
+                  "value": "8.0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notification-preferences/history?limit=50",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notification-preferences/mark-all-read",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "mark-all-read"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Clear All",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notification-preferences/clear",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "clear"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Available Channels",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/notification-preferences/channels-available",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "channels-available"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Available Frequencies",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/notification-preferences/frequencies-available",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notification-preferences",
+                "frequencies-available"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Marketplace Accounts",
+      "item": [
+        {
+          "name": "List Accounts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/marketplace-accounts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "marketplace-accounts"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create eBay Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/marketplace-accounts?platform=ebay&account_username=myebaystore",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "marketplace-accounts"
+              ],
+              "query": [
+                {
+                  "key": "platform",
+                  "value": "ebay"
+                },
+                {
+                  "key": "account_username",
+                  "value": "myebaystore"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Facebook Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/marketplace-accounts?platform=facebook&account_username=myfacebookpage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "marketplace-accounts"
+              ],
+              "query": [
+                {
+                  "key": "platform",
+                  "value": "facebook"
+                },
+                {
+                  "key": "account_username",
+                  "value": "myfacebookpage"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Account",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/marketplace-accounts/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "marketplace-accounts",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Account",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/marketplace-accounts/1?account_username=newhusername",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "marketplace-accounts",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "account_username",
+                  "value": "newhusername"
+                },
+                {
+                  "key": "is_active",
+                  "value": "true",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Disconnect Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/marketplace-accounts/1/disconnect",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "marketplace-accounts",
+                "1",
+                "disconnect"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reconnect Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/marketplace-accounts/1/reconnect",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "marketplace-accounts",
+                "1",
+                "reconnect"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/marketplace-accounts/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "marketplace-accounts",
+                "1"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Snap Studio",
+      "item": [
+        {
+          "name": "Create Snap Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"photos\": [\"https://example.com/photo1.jpg\"],\n  \"notes\": \"Nice couch, good condition\",\n  \"source\": \"upload\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/seller/snap",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "seller",
+                "snap"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Snap Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/seller/snap/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "seller",
+                "snap",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Snap Jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/seller/snap?limit=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "seller",
+                "snap"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publish Snap to Marketplace",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"snap_job_id\": 1,\n  \"platforms\": [\"ebay\", \"facebook\"],\n  \"price\": 200.0,\n  \"notes\": \"Cross-posting to multiple platforms\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/seller/snap/1/publish",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "seller",
+                "snap",
+                "1",
+                "publish"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Pricing",
+      "item": [
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/seller/pricing/categories",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "seller",
+                "pricing",
+                "categories"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Stats",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/seller/pricing/stats?category=furniture%3Esofas&condition=good",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "seller",
+                "pricing",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "furniture>sofas"
+                },
+                {
+                  "key": "condition",
+                  "value": "good",
+                  "disabled": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Market Trends",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/seller/pricing/market-trends?category=furniture%3Esofas&days=30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "seller",
+                "pricing",
+                "market-trends"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "furniture>sofas"
+                },
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get My Items",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/seller/pricing/my-items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "seller",
+                "pricing",
+                "my-items"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Comparable",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"furniture>sofas\",\n  \"title\": \"Blue Sectional Couch\",\n  \"price\": 350.0,\n  \"condition\": \"good\",\n  \"source\": \"ebay\",\n  \"metadata\": {\"size\": \"L-shaped\", \"color\": \"blue\"}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/seller/pricing/comps",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "seller",
+                "pricing",
+                "comps"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Testing",
+      "item": [
+        {
+          "name": "Missing Auth Header (401)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/buyer/deals",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "deals"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid Token (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid_token_here"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/deals",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "deals"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Non-Existent Resource (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/buyer/notifications/99999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "buyer",
+                "notifications",
+                "99999"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid Frequency (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notification-preferences?notification_frequency=invalid_frequency",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notification-preferences"
+              ],
+              "query": [
+                {
+                  "key": "notification_frequency",
+                  "value": "invalid_frequency"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

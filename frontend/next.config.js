@@ -1,5 +1,21 @@
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  fallbacks: {
+    document: '/_offline',
+  },
+  disable: process.env.NODE_ENV === 'development',
+});
+
+const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  'http://localhost:8000';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   output: 'standalone',
   images: {
     remotePatterns: [
@@ -10,8 +26,9 @@ const nextConfig = {
     ],
   },
   env: {
-    NEXT_PUBLIC_BACKEND_URL: process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_API_BASE_URL: apiBaseUrl,
+    NEXT_PUBLIC_BACKEND_URL: apiBaseUrl,
   },
 };
 
-module.exports = nextConfig;
+module.exports = withPWA(nextConfig);

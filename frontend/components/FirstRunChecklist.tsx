@@ -160,7 +160,7 @@ export default function FirstRunChecklist() {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
-              Let's finish setup
+              Let&apos;s finish setup
             </h2>
             <p className="text-sm text-gray-600">
               {okCount} of {totalCount} checks complete

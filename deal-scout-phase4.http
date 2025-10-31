@@ -1,0 +1,452 @@
+###############################################################################
+# DEAL SCOUT - PHASE 4 API REST CLIENT
+#
+# Use with VS Code REST Client extension (REST Client by Huachao Mao)
+# Usage:
+#   1. Install "REST Client" extension in VS Code
+#   2. Paste your JWT token into @token variable below
+#   3. Click "Send Request" above any request
+#   4. Response appears in side panel
+#
+# Setup:
+#   - Get token from /auth/register endpoint first
+#   - Copy access_token value into @token variable
+#   - All endpoints use @base_url and @token variables
+###############################################################################
+
+### Variables
+@base_url = http://localhost:8000
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4LCJ1c2VybmFtZSI6InRlc3R1c2VyX2ZyZXNoIiwiZW1haWwiOiJmcmVzaC50ZXN0QGV4YW1wbGUuY29tIiwicm9sZSI6ImJ1eWVyIiwiZXhwIjoxNzYxODUzNDg2LCJpYXQiOjE3NjE3NjcwODZ9.YfhgXRUhKISVUhM5B0I_2e5G5H9FDB0pih9-Mz0WiXs
+@token_seller = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjo4LCJ1c2VybmFtZSI6InRlc3R1c2VyX2ZyZXNoIiwiZW1haWwiOiJmcmVzaC50ZXN0QGV4YW1wbGUuY29tIiwicm9sZSI6InNlbGxlciIsImV4cCI6MTc2MTg1MzQ4NiwiaWF0IjoxNzYxNzY3MDg2fQ.sMv6t7S7D-qYBed2uzrkayq_1MDHv5DXYhNfXjEzN-s
+
+
+###############################################################################
+### AUTHENTICATION ENDPOINTS
+###############################################################################
+
+### 1. Register New User
+POST {{base_url}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "testuser{{$randomInt(1, 999)}}",
+  "email": "test{{$randomInt(1, 999)}}@example.com",
+  "password": "TestPassword123"
+}
+
+### 2. Login (Get Token)
+POST {{base_url}}/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=testuser&password=TestPassword123
+
+### 3. Get Current User
+GET {{base_url}}/auth/me
+Authorization: Bearer {{token}}
+
+
+###############################################################################
+### BUYER ENDPOINTS - DEALS
+###############################################################################
+
+### 4. List All Deals (Basic)
+GET {{base_url}}/buyer/deals
+Authorization: Bearer {{token}}
+
+### 5. List Deals with Filtering
+GET {{base_url}}/buyer/deals?limit=10&category=furniture&min_score=7.0&condition=good
+Authorization: Bearer {{token}}
+
+### 6. Get Saved Deals
+GET {{base_url}}/buyer/deals/saved
+Authorization: Bearer {{token}}
+
+### 7. Save a Deal (ID: 1)
+POST {{base_url}}/buyer/deals/1/save
+Authorization: Bearer {{token}}
+
+### 8. Unsave a Deal (ID: 1)
+DELETE {{base_url}}/buyer/deals/1/save
+Authorization: Bearer {{token}}
+
+
+###############################################################################
+### BUYER ENDPOINTS - NOTIFICATIONS
+###############################################################################
+
+### 9. List Notifications
+GET {{base_url}}/buyer/notifications
+Authorization: Bearer {{token}}
+
+### 10. Get Specific Notification (ID: 1)
+GET {{base_url}}/buyer/notifications/1
+Authorization: Bearer {{token}}
+
+### 11. Mark Notification as Read (ID: 1)
+PATCH {{base_url}}/buyer/notifications/1/mark-read
+Authorization: Bearer {{token}}
+
+
+###############################################################################
+### BUYER ENDPOINTS - PREFERENCES
+###############################################################################
+
+### 12. Get Buyer Preferences
+GET {{base_url}}/buyer/preferences
+Authorization: Bearer {{token}}
+
+### 13. Update Buyer Preferences
+PUT {{base_url}}/buyer/preferences?search_radius_mi=25&max_price_couch=2000&max_price_desk=500
+Authorization: Bearer {{token}}
+
+
+###############################################################################
+### NOTIFICATION PREFERENCES ENDPOINTS
+###############################################################################
+
+### 14. Get Notification Preferences
+GET {{base_url}}/notification-preferences
+Authorization: Bearer {{token}}
+
+### 15. Update Notification Preferences
+PUT {{base_url}}/notification-preferences?notification_frequency=daily_digest&deal_alert_min_score=7.5&email_notifications=true
+Authorization: Bearer {{token}}
+
+### 16. Reset Notification Preferences to Defaults
+POST {{base_url}}/notification-preferences/reset
+Authorization: Bearer {{token}}
+
+### 17. Get Notification History
+GET {{base_url}}/notification-preferences/history
+Authorization: Bearer {{token}}
+
+### 18. Clear All Notifications
+POST {{base_url}}/notification-preferences/clear
+Authorization: Bearer {{token}}
+
+### 19. Mark All Notifications as Read
+POST {{base_url}}/notification-preferences/mark-all-read
+Authorization: Bearer {{token}}
+
+### 20. Get Available Notification Channels
+GET {{base_url}}/notification-preferences/channels-available
+Authorization: Bearer {{token}}
+
+### 21. Get Available Notification Frequencies
+GET {{base_url}}/notification-preferences/frequencies-available
+Authorization: Bearer {{token}}
+
+
+###############################################################################
+### MARKETPLACE ACCOUNTS ENDPOINTS
+###############################################################################
+
+### 22. List Marketplace Accounts
+GET {{base_url}}/marketplace-accounts
+Authorization: Bearer {{token}}
+
+### 23. Get Specific Marketplace Account (ID: 1)
+GET {{base_url}}/marketplace-accounts/1
+Authorization: Bearer {{token}}
+
+### 24. Create Marketplace Account (eBay)
+POST {{base_url}}/marketplace-accounts?platform=ebay&account_username=mystore
+Authorization: Bearer {{token}}
+
+### 25. Create Marketplace Account (Facebook)
+POST {{base_url}}/marketplace-accounts?platform=facebook&account_username=my_facebook_page
+Authorization: Bearer {{token}}
+
+### 26. Update Marketplace Account (ID: 1)
+PATCH {{base_url}}/marketplace-accounts/1?platform=ebay&account_username=updated_store
+Authorization: Bearer {{token}}
+
+### 27. Disconnect Marketplace Account (ID: 1)
+POST {{base_url}}/marketplace-accounts/1/disconnect
+Authorization: Bearer {{token}}
+
+### 28. Reconnect Marketplace Account (ID: 1)
+POST {{base_url}}/marketplace-accounts/1/reconnect
+Authorization: Bearer {{token}}
+
+### 29. Delete Marketplace Account (ID: 1)
+DELETE {{base_url}}/marketplace-accounts/1
+Authorization: Bearer {{token}}
+
+
+###############################################################################
+### SNAP STUDIO ENDPOINTS
+###############################################################################
+
+### 30. Create Snap Job
+POST {{base_url}}/seller/snap
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "photos": ["https://example.com/furniture1.jpg", "https://example.com/furniture2.jpg"],
+  "notes": "Excellent condition couch, barely used",
+  "source": "upload"
+}
+
+### 31. Get Snap Job Status (ID: 1)
+GET {{base_url}}/seller/snap/1
+Authorization: Bearer {{token}}
+
+### 32. List Snap Jobs
+GET {{base_url}}/seller/snap?limit=10
+Authorization: Bearer {{token}}
+
+### 33. Publish Snap to Marketplace
+POST {{base_url}}/seller/snap/1/publish
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "Beautiful Couch - Excellent Condition",
+  "description": "Gently used couch, smoke-free home",
+  "platforms": ["ebay", "facebook"]
+}
+
+
+###############################################################################
+### PRICING ENDPOINTS
+###############################################################################
+
+### 34. Get Pricing Categories (PUBLIC - No Auth Required)
+GET {{base_url}}/seller/pricing/categories
+
+### 35. Get Your Listed Items
+GET {{base_url}}/seller/pricing/my-items
+Authorization: Bearer {{token}}
+
+### 36. Get Price Statistics for Category
+GET {{base_url}}/seller/pricing/stats?category=furniture%3Esofas
+Authorization: Bearer {{token}}
+
+### 37. Get Market Trends for Category
+GET {{base_url}}/seller/pricing/market-trends?category=furniture%3Esofas&days=30
+Authorization: Bearer {{token}}
+
+### 38. Create Comparable Listing
+POST {{base_url}}/seller/pricing/comps
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "category": "furniture>sofas",
+  "title": "Comparable Sofa Listing",
+  "condition": "good",
+  "price": 1500.00,
+  "url": "https://example.com/listing/123"
+}
+
+
+###############################################################################
+### ERROR TESTING - 401 Unauthorized
+###############################################################################
+
+### 39. Missing Token (Should return 401)
+GET {{base_url}}/buyer/deals
+
+### 40. Invalid Token (Should return 401)
+GET {{base_url}}/buyer/deals
+Authorization: Bearer invalid_token_here
+
+
+###############################################################################
+### ERROR TESTING - 403 Forbidden (Non-Seller Accessing Seller Endpoints)
+###############################################################################
+
+### 41. Buyer Trying to Create Snap (Should return 403)
+POST {{base_url}}/seller/snap
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "photos": ["https://example.com/photo.jpg"],
+  "notes": "This buyer lacks seller role",
+  "source": "upload"
+}
+
+
+###############################################################################
+### ERROR TESTING - 404 Not Found
+###############################################################################
+
+### 42. Get Non-Existent Notification (Should return 404)
+GET {{base_url}}/buyer/notifications/99999
+Authorization: Bearer {{token}}
+
+### 43. Get Non-Existent Marketplace Account (Should return 404)
+GET {{base_url}}/marketplace-accounts/99999
+Authorization: Bearer {{token}}
+
+
+###############################################################################
+### ERROR TESTING - 422 Unprocessable Entity (Invalid Data)
+###############################################################################
+
+### 44. Create Marketplace Account with Missing Platform (Should return 422)
+POST {{base_url}}/marketplace-accounts?account_username=store
+Authorization: Bearer {{token}}
+
+### 45. Update Preferences with Invalid Frequency (Should return 422)
+PUT {{base_url}}/notification-preferences?notification_frequency=invalid_frequency
+Authorization: Bearer {{token}}
+
+### 46. Register with Duplicate Email (Should return 409)
+POST {{base_url}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "different_user",
+  "email": "test@example.com",
+  "password": "TestPassword123"
+}
+
+
+###############################################################################
+### QUICK TEST FLOWS - WORKING ENDPOINTS
+###############################################################################
+
+### FLOW 1A: Become a Buyer - Register
+POST {{base_url}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "buyer_test_{{$randomInt(10000, 99999)}}",
+  "email": "buyer{{$randomInt(10000, 99999)}}@example.com",
+  "password": "BuyerPassword123"
+}
+
+### FLOW 1B: View Your Profile (Works!)
+GET {{base_url}}/auth/me
+Authorization: Bearer {{token}}
+
+### FLOW 1C: View Available Listings (Works!)
+GET {{base_url}}/listings?page=1&size=10
+Authorization: Bearer {{token}}
+
+### FLOW 1D: Get Specific Listing (Works!)
+GET {{base_url}}/listings/6
+Authorization: Bearer {{token}}
+
+### FLOW 1E: View Pricing Categories (Works!)
+GET {{base_url}}/seller/pricing/categories
+
+### FLOW 1F: Create Marketplace Account (Seller Only)
+POST {{base_url}}/marketplace-accounts?platform=ebay&account_username=mystore
+Authorization: Bearer {{token_seller}}
+
+
+###############################################################################
+### PERFORMANCE/LOAD TESTING NOTES
+###############################################################################
+
+# To test under load, you can use this request multiple times:
+#
+# GET {{base_url}}/buyer/deals?limit=10
+# Authorization: Bearer {{token}}
+#
+# Or use VS Code's built-in "Run All" feature:
+# 1. Select multiple requests
+# 2. Right-click → "Run All Requests in Region"
+#
+# For heavier load testing, see PHASE_4_TESTING_GUIDE.md for PowerShell examples
+
+
+###############################################################################
+### REFERENCE: CATEGORY PATHS
+###############################################################################
+
+# Common category paths for pricing endpoints:
+# - furniture>sofas
+# - furniture>desks
+# - furniture>tables
+# - electronics>phones
+# - electronics>laptops
+# - home>decor
+#
+# Use URL-encoded: furniture%3Esofas (> becomes %3E)
+
+
+###############################################################################
+### REFERENCE: VALID ENUM VALUES
+###############################################################################
+
+# Notification Frequencies:
+#   - instant
+#   - daily_digest
+#   - weekly_digest
+#
+# Item Conditions:
+#   - new
+#   - like_new
+#   - good
+#   - fair
+#   - poor
+#
+# Marketplace Platforms:
+#   - ebay
+#   - facebook
+#   - etsy
+#   - craigslist
+#   - shopify
+
+
+###############################################################################
+### DEBUGGING TIPS
+###############################################################################
+
+# 1. View full request/response:
+#    Click gear icon → enable "Generate full cURL" to see what's being sent
+#
+# 2. Check response headers:
+#    The panel shows headers, body, timeline, and cookies
+#
+# 3. JWT token details:
+#    Copy your token and paste at https://jwt.io to decode it
+#
+# 4. Database state:
+#    Backend logs show all SQL queries when enabled
+#
+# 5. Common issues:
+#    - "Connection refused" → Backend not running (docker compose up -d)
+#    - "401 Unauthorized" → Invalid or missing token
+#    - "403 Forbidden" → User role doesn't have access
+#    - "404 Not Found" → Wrong endpoint path or resource ID
+
+
+###############################################################################
+### HELPFUL SHORTCUTS
+###############################################################################
+
+# To quickly test all Buyer deals endpoints:
+# 1. Run: List All Deals
+# 2. Run: List Deals with Filtering
+# 3. Run: Save a Deal
+# 4. Run: Get Saved Deals
+#
+# To quickly test all Notification Preference endpoints:
+# 1. Run: Get Notification Preferences
+# 2. Run: Update Notification Preferences
+# 3. Run: Get Available Channels
+# 4. Run: Get Available Frequencies
+#
+# To test full Seller Snap workflow:
+# 1. Run: Create Snap Job
+# 2. Run: Get Snap Job Status
+# 3. Run: Publish Snap to Marketplace
+#
+# To test Marketplace account management:
+# 1. Run: Create Marketplace Account (eBay)
+# 2. Run: List Marketplace Accounts
+# 3. Run: Get Specific Account
+# 4. Run: Update Marketplace Account
+# 5. Run: Disconnect Account
+
+
+###############################################################################
+# END OF REST CLIENT FILE
+###############################################################################

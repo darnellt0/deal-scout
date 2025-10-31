@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import useSWR from "swr";
 import { UploadForm } from "../../components/UploadForm";
+import { QuickListingModal } from "../../components/QuickListingModal";
 import { fetchSnapJobs, SnapJobSummary } from "../../lib/api";
 
 export default function SellerPage() {
+  const [isQuickListingOpen, setIsQuickListingOpen] = useState(false);
   const { data: snapJobs } = useSWR<SnapJobSummary[]>(
     "snap-jobs",
     fetchSnapJobs,
@@ -14,14 +17,35 @@ export default function SellerPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">
-          Seller Snap Studio
-        </h1>
-        <p className="text-sm text-slate-500">
-          Upload photos and Deal Scout will detect the item, clean images, draft listings,
-          and prep one-click cross posts to eBay and other marketplaces.
-        </p>
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Seller Snap Studio
+          </h1>
+          <p className="text-sm text-slate-500">
+            Upload photos and Deal Scout will detect the item, clean images, draft listings,
+            and prep one-click cross posts to eBay and other marketplaces.
+          </p>
+        </div>
+        <button
+          onClick={() => setIsQuickListingOpen(true)}
+          className="inline-flex items-center justify-center rounded-lg bg-green-600 px-6 py-3 font-semibold text-white shadow hover:bg-green-700 transition-colors whitespace-nowrap"
+        >
+          <svg
+            className="w-5 h-5 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          Quick List Item
+        </button>
       </header>
       {!hasPrepared && (
         <div className="rounded-lg border border-dashed border-brand px-6 py-4 text-sm text-slate-600">
@@ -77,6 +101,12 @@ export default function SellerPage() {
           <li>Ready-to-publish drafts appear in the Seller Dashboard.</li>
         </ol>
       </section>
+
+      {/* Quick Listing Modal */}
+      <QuickListingModal
+        isOpen={isQuickListingOpen}
+        onClose={() => setIsQuickListingOpen(false)}
+      />
     </div>
   );
 }

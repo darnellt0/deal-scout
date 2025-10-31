@@ -31,6 +31,9 @@ from app.routes.comps import router as comps_router
 from app.routes.marketplace_accounts import router as marketplace_accounts_router
 from app.routes.notification_preferences import router as notification_preferences_router
 from app.routes.push_notifications import router as push_notifications_router
+from app.routes.facebook_oauth import router as facebook_oauth_router
+from app.routes.offerup_oauth import router as offerup_oauth_router
+from app.routes.deal_alerts import router as deal_alerts_router
 from app.seller.post import router as post_router
 from app.seller.snap import router as snap_router
 from app.seller.pricing import router as pricing_router
@@ -244,6 +247,7 @@ app.include_router(comps_router)
 app.include_router(marketplace_accounts_router)
 app.include_router(notification_preferences_router)
 app.include_router(push_notifications_router)
+app.include_router(deal_alerts_router)
 
 # Marketplace and seller routes
 app.include_router(snap_router, prefix="/seller", tags=["seller"])
@@ -251,6 +255,8 @@ app.include_router(post_router, prefix="/seller", tags=["seller"])
 app.include_router(pricing_router, prefix="/seller", tags=["seller"])
 app.include_router(buyer_router, prefix="/buyer", tags=["buyer"])
 app.include_router(ebay_oauth_router, prefix="/ebay", tags=["ebay"])
+app.include_router(facebook_oauth_router)
+app.include_router(offerup_oauth_router)
 app.include_router(tasks_router, prefix="/tasks", tags=["tasks"])
 app.include_router(setup_router, prefix="/setup", tags=["setup"])
 
