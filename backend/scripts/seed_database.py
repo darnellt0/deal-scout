@@ -8,7 +8,7 @@ Run this script from the project root: python backend/scripts/seed_database.py
 
 import sys
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 # Add backend to path
@@ -74,7 +74,7 @@ def seed_listings(session):
     """Seed marketplace listing data."""
     print("Seeding listings...")
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     listings = [
         Listing(
             source="ebay",
@@ -274,7 +274,7 @@ def seed_cross_posts(session):
                 external_id=f"{platform}-{item.id}",
                 listing_url=f"https://{platform}.com/item/{item.id}",
                 status="active",
-                meta={"posted_at": datetime.utcnow().isoformat()},
+                meta={"posted_at": datetime.now(timezone.utc).isoformat()},
             )
             cross_posts.append(post)
             session.add(post)

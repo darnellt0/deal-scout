@@ -16,15 +16,17 @@ Requirements:
     pip install PyJWT
 """
 
-import jwt
-import json
-import sys
 import argparse
-from datetime import datetime, timedelta
+import json
+import os
+import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+import jwt
+
 # Configuration - Match your backend settings
-JWT_SECRET = "your-secret-key-here"  # MUST match backend .env JWT_SECRET_KEY
+JWT_SECRET = os.getenv("JWT_SECRET_KEY", "dev-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
 TOKEN_EXPIRATION_HOURS = 24
 
@@ -69,8 +71,8 @@ def generate_token(user_id: int, username: str, email: str, role: str) -> str:
         "username": username,
         "email": email,
         "role": role,
-        "exp": datetime.utcnow() + timedelta(hours=TOKEN_EXPIRATION_HOURS),
-        "iat": datetime.utcnow()
+        "exp": datetime.now(timezone.utc) + timedelta(hours=TOKEN_EXPIRATION_HOURS),
+        "iat": datetime.now(timezone.utc)
     }
 
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)

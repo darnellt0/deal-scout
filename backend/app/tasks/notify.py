@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import datetime
 from typing import Dict, List
 
 from celery import shared_task
@@ -9,6 +8,7 @@ from celery import shared_task
 from app.core.db import get_session
 from app.core.models import Notification
 from app.notify.channels import send_email
+from app.core.utils import utcnow
 
 
 def _render_digest(groups: Dict[str, List[Notification]]) -> str:
@@ -53,6 +53,6 @@ def send_notifications():
 
         for notification in notifications:
             notification.status = "sent"
-            notification.sent_at = datetime.utcnow()
+            notification.sent_at = utcnow()
             sent += 1
     return {"sent": sent}

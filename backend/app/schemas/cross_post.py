@@ -1,9 +1,11 @@
 """Schemas for CrossPost model."""
 
 from datetime import datetime
-from typing import Dict, Optional
-from pydantic import Field
-from app.schemas.base import ORMModel, TimestampedModel
+from typing import Dict, Optional, Any
+
+from pydantic import BaseModel, Field
+
+from app.schemas.base import ORMModel
 
 
 class CrossPostBase(ORMModel):
@@ -42,3 +44,26 @@ class CrossPostOut(ORMModel):
     meta: Dict = Field(default_factory=dict, alias="metadata")
     created_at: datetime
     updated_at: Optional[datetime] = None
+
+
+class CrossPostItemSummary(BaseModel):
+    """Lightweight summary of the associated MyItem record."""
+
+    id: int
+    title: str
+    price: float
+    status: str
+
+
+class CrossPostListing(BaseModel):
+    """Cross post record with associated item metadata for seller dashboards."""
+
+    id: int
+    platform: str
+    status: str
+    listing_url: Optional[str] = None
+    created_at: datetime
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    notes: Optional[str] = None
+    snap_job_id: Optional[int] = None
+    item: CrossPostItemSummary

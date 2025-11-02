@@ -3,7 +3,7 @@
 import { Deal } from "../lib/api";
 
 interface TestResultsModalProps {
-  results: Deal[];
+  results: Deal[] | { sample_matches?: Deal[] };
   onClose: () => void;
 }
 
@@ -11,12 +11,16 @@ export default function TestResultsModal({
   results,
   onClose,
 }: TestResultsModalProps) {
+  const matches = Array.isArray(results)
+    ? results
+    : results?.sample_matches ?? [];
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-full max-w-4xl rounded-lg bg-white p-6 shadow-lg">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">
-            Test Results ({results.length} matches)
+            Test Results ({matches.length} matches)
           </h2>
           <button
             onClick={onClose}
@@ -26,13 +30,13 @@ export default function TestResultsModal({
           </button>
         </div>
 
-        {results.length === 0 ? (
+        {matches.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center">
             <p className="text-slate-600">No listings match this rule.</p>
           </div>
         ) : (
           <div className="max-h-96 overflow-y-auto space-y-3">
-            {results.map((deal) => (
+            {matches.map((deal) => (
               <div
                 key={deal.id}
                 className="flex items-start gap-4 rounded-lg border border-slate-200 p-3 hover:bg-slate-50"

@@ -5,11 +5,12 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, desc, select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import Session
 
 from app.core.db import SessionLocal
 from app.core.models import DealAlertRule, Listing, User
 from app.core.auth import get_current_user
+from app.core.utils import utcnow
 
 def get_db():
     """Get database session."""
@@ -27,7 +28,7 @@ router = APIRouter(prefix="/deal-alert-rules", tags=["deal-alerts"])
 # ============================================================================
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DealAlertRuleCreate(BaseModel):
@@ -81,9 +82,7 @@ class DealAlertRuleResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     last_triggered_at: Optional[datetime]
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================================
@@ -94,7 +93,7 @@ class DealAlertRuleResponse(BaseModel):
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=DealAlertRuleResponse)
 async def create_deal_alert_rule(
     rule_data: DealAlertRuleCreate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Create a new deal alert rule for the current user."""
@@ -114,8 +113,8 @@ async def create_deal_alert_rule(
         enabled=rule_data.enabled,
     )
     db.add(new_rule)
-    await db.commit()
-    await db.refresh(new_rule)
+    db.commit()
+    db.refresh(new_rule)
     return new_rule
 
 
@@ -124,7 +123,7 @@ async def list_deal_alert_rules(
     enabled_only: bool = Query(False),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """List all deal alert rules for the current user."""
@@ -137,7 +136,7 @@ async def list_deal_alert_rules(
 
     query = query.order_by(desc(DealAlertRule.created_at)).offset(skip).limit(limit)
 
-    result = await db.execute(query)
+    result = db.execute(query)
     rules = result.scalars().all()
     return rules
 
@@ -145,11 +144,11 @@ async def list_deal_alert_rules(
 @router.get("/{rule_id}", response_model=DealAlertRuleResponse)
 async def get_deal_alert_rule(
     rule_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Get a specific deal alert rule."""
-    result = await db.execute(
+    result = db.execute(
         select(DealAlertRule).where(
             and_(
                 DealAlertRule.id == rule_id,
@@ -169,11 +168,11 @@ async def get_deal_alert_rule(
 async def update_deal_alert_rule(
     rule_id: int,
     rule_data: DealAlertRuleUpdate,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Update a deal alert rule."""
-    result = await db.execute(
+    result = db.execute(
         select(DealAlertRule).where(
             and_(
                 DealAlertRule.id == rule_id,
@@ -191,20 +190,20 @@ async def update_deal_alert_rule(
     for field, value in update_data.items():
         setattr(rule, field, value)
 
-    rule.updated_at = datetime.utcnow()
-    await db.commit()
-    await db.refresh(rule)
+    rule.updated_at = utcnow()
+    db.commit()
+    db.refresh(rule)
     return rule
 
 
 @router.delete("/{rule_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_deal_alert_rule(
     rule_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Delete a deal alert rule."""
-    result = await db.execute(
+    result = db.execute(
         select(DealAlertRule).where(
             and_(
                 DealAlertRule.id == rule_id,
@@ -217,18 +216,18 @@ async def delete_deal_alert_rule(
     if not rule:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rule not found")
 
-    await db.delete(rule)
-    await db.commit()
+    db.delete(rule)
+    db.commit()
 
 
 @router.post("/{rule_id}/test", response_model=dict)
 async def test_deal_alert_rule(
     rule_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Test a deal alert rule and return matching listings."""
-    result = await db.execute(
+    result = db.execute(
         select(DealAlertRule).where(
             and_(
                 DealAlertRule.id == rule_id,
@@ -242,7 +241,7 @@ async def test_deal_alert_rule(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rule not found")
 
     # Find matching listings
-    matching_listings = await _find_matching_listings(db, rule)
+    matching_listings = _find_matching_listings(db, rule)
 
     return {
         "rule_id": rule_id,
@@ -263,11 +262,11 @@ async def test_deal_alert_rule(
 @router.post("/{rule_id}/pause", status_code=status.HTTP_200_OK)
 async def pause_deal_alert_rule(
     rule_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Temporarily disable a deal alert rule."""
-    result = await db.execute(
+    result = db.execute(
         select(DealAlertRule).where(
             and_(
                 DealAlertRule.id == rule_id,
@@ -281,20 +280,20 @@ async def pause_deal_alert_rule(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rule not found")
 
     rule.enabled = False
-    rule.updated_at = datetime.utcnow()
-    await db.commit()
-    await db.refresh(rule)
+    rule.updated_at = utcnow()
+    db.commit()
+    db.refresh(rule)
     return {"status": "paused", "rule_id": rule_id}
 
 
 @router.post("/{rule_id}/resume", status_code=status.HTTP_200_OK)
 async def resume_deal_alert_rule(
     rule_id: int,
-    db: AsyncSession = Depends(get_db),
+    db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """Re-enable a paused deal alert rule."""
-    result = await db.execute(
+    result = db.execute(
         select(DealAlertRule).where(
             and_(
                 DealAlertRule.id == rule_id,
@@ -308,9 +307,9 @@ async def resume_deal_alert_rule(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Rule not found")
 
     rule.enabled = True
-    rule.updated_at = datetime.utcnow()
-    await db.commit()
-    await db.refresh(rule)
+    rule.updated_at = utcnow()
+    db.commit()
+    db.refresh(rule)
     return {"status": "resumed", "rule_id": rule_id}
 
 
@@ -319,7 +318,7 @@ async def resume_deal_alert_rule(
 # ============================================================================
 
 
-async def _find_matching_listings(db: AsyncSession, rule: DealAlertRule) -> List[Listing]:
+def _find_matching_listings(db: Session, rule: DealAlertRule) -> List[Listing]:
     """Find listings that match a deal alert rule."""
     query = select(Listing).where(Listing.available == True)
 
@@ -338,7 +337,7 @@ async def _find_matching_listings(db: AsyncSession, rule: DealAlertRule) -> List
         query = query.where(Listing.condition == rule.condition)
 
     # Execute query
-    result = await db.execute(query.limit(100))
+    result = db.execute(query.limit(100))
     listings = result.scalars().all()
 
     # Filter by keywords (in-memory, after basic DB filters)

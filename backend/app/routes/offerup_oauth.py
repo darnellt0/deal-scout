@@ -3,7 +3,7 @@
 import httpx
 import logging
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Query, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -36,8 +36,8 @@ def generate_state_token(user_id: int) -> str:
     # Store with 10 minute expiry
     _state_tokens[token] = {
         "user_id": user_id,
-        "created_at": datetime.utcnow(),
-        "expires_at": datetime.utcnow() + timedelta(minutes=10)
+        "created_at": datetime.now(timezone.utc),
+        "expires_at": datetime.now(timezone.utc) + timedelta(minutes=10)
     }
     return token
 
@@ -50,7 +50,7 @@ def verify_state_token(token: str) -> Optional[int]:
 
     token_data = _state_tokens[token]
 
-    if datetime.utcnow() > token_data["expires_at"]:
+    if datetime.now(timezone.utc) > token_data["expires_at"]:
         logger.warning(f"State token expired: {token}")
         del _state_tokens[token]
         return None
@@ -214,7 +214,7 @@ async def offerup_callback(
     # Check if account already exists
     existing = db.query(MarketplaceAccount).filter(
         MarketplaceAccount.user_id == user.id,
-        MarketplaceAccount.marketplace == "offerup"
+        MarketplaceAccount.platform == "offerup"
     ).first()
 
     try:
@@ -224,18 +224,18 @@ async def offerup_callback(
             existing.account_username = offerup_username
             existing.access_token = access_token
             existing.is_active = True
-            existing.connected_at = datetime.utcnow()
+            existing.connected_at = datetime.now(timezone.utc)
             logger.info(f"Updated Offerup account for user {user_id}: {offerup_username}")
         else:
             # Create new account
             account = MarketplaceAccount(
                 user_id=user.id,
-                marketplace="offerup",
+                platform="offerup",
                 marketplace_account_id=offerup_user_id,
                 account_username=offerup_username,
                 access_token=access_token,
                 is_active=True,
-                connected_at=datetime.utcnow(),
+                connected_at=datetime.now(timezone.utc),
             )
             db.add(account)
             logger.info(f"Created new Offerup account for user {user_id}: {offerup_username}")
@@ -270,7 +270,7 @@ async def verify_offerup_connection(
     """
     account = db.query(MarketplaceAccount).filter(
         MarketplaceAccount.user_id == current_user.id,
-        MarketplaceAccount.marketplace == "offerup"
+        MarketplaceAccount.platform == "offerup"
     ).first()
 
     if not account:
@@ -334,7 +334,7 @@ async def disconnect_offerup(
     """
     account = db.query(MarketplaceAccount).filter(
         MarketplaceAccount.user_id == current_user.id,
-        MarketplaceAccount.marketplace == "offerup"
+        MarketplaceAccount.platform == "offerup"
     ).first()
 
     if not account:

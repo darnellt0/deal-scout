@@ -5,6 +5,11 @@ const API_BASE =
   process.env.NEXT_PUBLIC_BACKEND_URL ||
   FALLBACK_API;
 
+const FALLBACK_AUTH_TOKEN =
+  process.env.NEXT_PUBLIC_AUTH_TOKEN ||
+  process.env.NEXT_PUBLIC_DEMO_AUTH_TOKEN ||
+  "";
+
 export type Deal = {
   id: number;
   title: string;
@@ -63,9 +68,8 @@ export async function triggerScan(live: boolean): Promise<void> {
 }
 
 export async function submitSnap(payload: SnapRequest) {
-  const response = await fetch(`${API_BASE}/seller/snap`, {
+  const response = await authenticatedFetch(`${API_BASE}/seller/snap`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
   if (!response.ok) {
@@ -99,7 +103,7 @@ export type SnapJobSummary = {
 };
 
 export async function fetchSnapJobs(): Promise<SnapJobSummary[]> {
-  const response = await fetch(`${API_BASE}/seller/snap`, {
+  const response = await authenticatedFetch(`${API_BASE}/seller/snap`, {
     headers: { "Accept": "application/json" },
     cache: "no-store",
   });
@@ -108,6 +112,40 @@ export async function fetchSnapJobs(): Promise<SnapJobSummary[]> {
   }
   return response.json();
 }
+
+export type PublishSnapJobRequest = {
+  snap_job_id: number;
+  platforms: string[];
+  price?: number;
+  notes?: string;
+};
+
+export type PublishSnapJobResponse = {
+  cross_post_id: number;
+  item_id: number;
+  platforms: string[];
+  status: string;
+  created_at: string | null;
+};
+
+export type CrossPostItemSummary = {
+  id: number;
+  title: string;
+  price: number;
+  status: string;
+};
+
+export type CrossPostListing = {
+  id: number;
+  platform: string;
+  status: string;
+  listing_url?: string | null;
+  created_at: string;
+  metadata: Record<string, unknown>;
+  notes?: string | null;
+  snap_job_id?: number | null;
+  item: CrossPostItemSummary;
+};
 
 // Phase 7: Deal Alerts API types and functions
 export type DealAlertRule = {
@@ -167,8 +205,24 @@ export type NotificationPreferences = {
 
 // Get JWT token from localStorage
 function getAuthToken(): string {
-  if (typeof window === "undefined") return "";
-  return localStorage.getItem("auth_token") || "";
+  if (typeof window === "undefined") {
+    return FALLBACK_AUTH_TOKEN;
+  }
+
+  const stored =
+    window.localStorage.getItem("auth_token") ||
+    window.sessionStorage.getItem("auth_token");
+
+  if (stored) {
+    return stored;
+  }
+
+  if (FALLBACK_AUTH_TOKEN) {
+    window.localStorage.setItem("auth_token", FALLBACK_AUTH_TOKEN);
+    return FALLBACK_AUTH_TOKEN;
+  }
+
+  return "";
 }
 
 // Helper to make authenticated requests
@@ -389,6 +443,41 @@ export async function updateMaxNotificationsPerDay(
   return response.json();
 }
 
+export async function publishSnapJob(
+  jobId: number,
+  data: PublishSnapJobRequest
+): Promise<PublishSnapJobResponse> {
+  const response = await authenticatedFetch(
+    `${API_BASE}/seller/snap/${jobId}/publish`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(detail.detail || "Failed to publish snap job");
+  }
+  return response.json();
+}
+
+export async function fetchCrossPosts(
+  status?: string
+): Promise<CrossPostListing[]> {
+  const url = new URL(`${API_BASE}/seller/cross-posts`);
+  if (status) {
+    url.searchParams.set("status", status);
+  }
+  const response = await authenticatedFetch(url.toString(), {
+    headers: { Accept: "application/json" },
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw new Error("Failed to fetch cross-post listings");
+  }
+  return response.json();
+}
+
 export async function addPhoneNumber(
   phone_number: string
 ): Promise<NotificationPreferences> {
@@ -403,6 +492,17 @@ export async function addPhoneNumber(
     throw new Error("Failed to add phone number");
   }
   return response.json();
+}
+
+export async function deleteSnapJob(jobId: number): Promise<void> {
+  const response = await authenticatedFetch(
+    `${API_BASE}/seller/snap/${jobId}`,
+    { method: "DELETE" }
+  );
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(detail.detail || "Failed to delete snap job");
+  }
 }
 
 export async function removePhoneNumber(): Promise<NotificationPreferences> {

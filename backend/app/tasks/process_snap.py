@@ -54,6 +54,7 @@ def process_snap_job(job_id: int):
         )
 
         item = MyItem(
+            user_id=job.user_id,
             title=title,
             category=category,
             attributes=attributes,

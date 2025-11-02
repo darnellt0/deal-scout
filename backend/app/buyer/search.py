@@ -48,7 +48,7 @@ class ListingMatch:
 def _normalize_condition(raw: str | None) -> str:
     if not raw:
         return "good"
-    raw_lower = raw.lower()
+    raw_lower = raw.lower().replace("_", " ")
     mapping = {
         "like new": "excellent",
         "new": "excellent",
@@ -153,7 +153,7 @@ def _load_fixture_candidates(limit: int = 250) -> List[dict]:
                     "title": entry["title"],
                     "description": entry.get("description"),
                     "price": (entry.get("price_cents", 0) or 0) / 100.0,
-                    "condition": entry.get("condition", "good"),
+                "condition": _normalize_condition(entry.get("condition", "good")),
                     "category": entry.get("category"),
                     "url": entry.get("url"),
                     "thumbnail_url": (entry.get("images") or [None])[0],
@@ -174,6 +174,8 @@ def store_candidates(candidates: List[dict]) -> List[ListingMatch]:
 
     with get_session() as session:
         for candidate in candidates:
+            condition_value = _normalize_condition(candidate.get("condition"))
+            candidate["condition"] = condition_value
             existing = (
                 session.query(Listing)
                 .filter_by(source=candidate["source"], source_id=candidate["source_id"])
@@ -182,7 +184,7 @@ def store_candidates(candidates: List[dict]) -> List[ListingMatch]:
 
             if existing:
                 listing = existing
-                listing.last_seen_at = datetime.utcnow()
+                listing.last_seen_at = datetime.now(timezone.utc)
                 listing.available = True
             else:
                 listing = Listing(
@@ -191,7 +193,7 @@ def store_candidates(candidates: List[dict]) -> List[ListingMatch]:
                     title=candidate["title"],
                     description=candidate.get("description"),
                     price=candidate["price"],
-                    condition=Condition(candidate["condition"]),
+                    condition=Condition(condition_value),
                     category=candidate.get("category"),
                     url=candidate["url"],
                     thumbnail_url=candidate.get("thumbnail_url"),
@@ -207,7 +209,7 @@ def store_candidates(candidates: List[dict]) -> List[ListingMatch]:
             deal_score = compute_deal_score(
                 DealScoreContext(
                     price=candidate["price"],
-                    condition=candidate["condition"],
+                    condition=condition_value,
                     posted_at=candidate["posted_at"],
                     coords=coords,
                     user_coords=SAN_JOSE_COORDS,

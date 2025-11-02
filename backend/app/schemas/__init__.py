@@ -9,6 +9,12 @@ from app.schemas.marketplace import MarketplaceAccountOut, MarketplaceAccountCre
 from app.schemas.my_item import MyItemOut, MyItemCreate, MyItemUpdate
 from app.schemas.cross_post import CrossPostOut, CrossPostCreate
 from app.schemas.order import OrderOut
+from app.schemas.inventory import (
+    PublishListingRequest,
+    SaleWebhookPayload,
+    MarketplaceListingResponse,
+    SalesOrderResponse,
+)
 from app.schemas.snap_job import SnapJobOut, SnapJobUpdate
 from app.schemas.common import Page, PageMeta, PageResponse
 
@@ -42,6 +48,11 @@ __all__ = [
     "CrossPostCreate",
     # Orders
     "OrderOut",
+    # Inventory
+    "PublishListingRequest",
+    "SaleWebhookPayload",
+    "MarketplaceListingResponse",
+    "SalesOrderResponse",
     # Snap Jobs
     "SnapJobOut",
     "SnapJobUpdate",

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import redis
-from fastapi import FastAPI, Query, Request
+from fastapi import Depends, FastAPI, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -34,12 +34,17 @@ from app.routes.push_notifications import router as push_notifications_router
 from app.routes.facebook_oauth import router as facebook_oauth_router
 from app.routes.offerup_oauth import router as offerup_oauth_router
 from app.routes.deal_alerts import router as deal_alerts_router
+from app.routes.inventory import router as inventory_router
+from app.routes.cross_posts import router as cross_posts_router
+from app.middleware.mode_from_path import PathModeMiddleware
 from app.seller.post import router as post_router
 from app.seller.snap import router as snap_router
 from app.seller.pricing import router as pricing_router
 from app.setup.router import router as setup_router
 from app.tasks.router import router as tasks_router
 from app.worker import celery_app
+from app.api.routes import buyer as api_buyer_routes, seller as api_seller_routes
+from app.api.deps import ensure_role_from_path
 
 # Initialize logging early for use in lifespan
 logging.basicConfig(level=logging.INFO)
@@ -51,26 +56,31 @@ def _wait_for_db(max_wait_seconds: int = 30) -> bool:
     Wait for database to be ready. Retries with exponential backoff.
     Returns True if DB is ready, False if timeout.
     """
-    start = time.time()
+    start_time = time.time()
     attempt = 0
-    while time.time() - start < max_wait_seconds:
+    while time.time() - start_time < max_wait_seconds:
         try:
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
-                logger.info(f"✓ Database is ready (attempt {attempt + 1})")
-                return True
-        except Exception as e:
+            logger.info("Database connection established (attempt %s)", attempt + 1)
+            return True
+        except Exception as exc:
             attempt += 1
-            elapsed = time.time() - start
+            elapsed = time.time() - start_time
             remaining = max_wait_seconds - elapsed
             logger.warning(
-                f"Database not ready (attempt {attempt}, {elapsed:.1f}s elapsed, "
-                f"{remaining:.1f}s remaining): {type(e).__name__}"
+                "Database not ready (attempt %s, %.1fs elapsed, %.1fs remaining): %s",
+                attempt,
+                elapsed,
+                max(remaining, 0.0),
+                type(exc).__name__,
             )
-            time.sleep(min(2 ** attempt, 5))  # Exponential backoff, max 5 sec
+            time.sleep(min(2 ** attempt, 5))
 
-    logger.error(f"Database failed to become ready after {max_wait_seconds}s. "
-                 "Health checks will still respond OK, but queries may fail.")
+    logger.error(
+        "Database failed to become ready after %ss. Health checks may still respond OK, but queries can fail.",
+        max_wait_seconds,
+    )
     return False
 
 
@@ -89,13 +99,26 @@ app = FastAPI(title="Deal Scout API", version="0.1.0", lifespan=lifespan)
 # Register exception handlers
 register_exception_handlers(app)
 
+frontend_origins = {
+    "http://localhost:3002",
+    "http://localhost:3003",
+    "http://localhost:3001",
+    "http://127.0.0.1:3002",
+    "http://127.0.0.1:3003",
+    "http://127.0.0.1:3001",
+}
+allow_origins = list({*(settings.cors_origins if hasattr(settings, "cors_origins") else []), *frontend_origins})
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins if hasattr(settings, 'cors_origins') else ["http://localhost:3000"],
+    allow_origins=allow_origins or ["http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
+app.add_middleware(PathModeMiddleware)
+
+role_from_path_dependency = ensure_role_from_path()
 
 static_dir = Path(__file__).resolve().parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
@@ -248,12 +271,41 @@ app.include_router(marketplace_accounts_router)
 app.include_router(notification_preferences_router)
 app.include_router(push_notifications_router)
 app.include_router(deal_alerts_router)
+app.include_router(inventory_router)
 
 # Marketplace and seller routes
-app.include_router(snap_router, prefix="/seller", tags=["seller"])
-app.include_router(post_router, prefix="/seller", tags=["seller"])
-app.include_router(pricing_router, prefix="/seller", tags=["seller"])
-app.include_router(buyer_router, prefix="/buyer", tags=["buyer"])
+app.include_router(
+    snap_router,
+    prefix="/seller",
+    tags=["seller"],
+    dependencies=[Depends(role_from_path_dependency)],
+)
+app.include_router(
+    post_router,
+    prefix="/seller",
+    tags=["seller"],
+    dependencies=[Depends(role_from_path_dependency)],
+)
+app.include_router(
+    pricing_router,
+    prefix="/seller",
+    tags=["seller"],
+    dependencies=[Depends(role_from_path_dependency)],
+)
+app.include_router(
+    cross_posts_router,
+    prefix="/seller",
+    tags=["seller"],
+    dependencies=[Depends(role_from_path_dependency)],
+)
+app.include_router(
+    buyer_router,
+    prefix="/buyer",
+    tags=["buyer"],
+    dependencies=[Depends(role_from_path_dependency)],
+)
+app.include_router(api_buyer_routes.router)
+app.include_router(api_seller_routes.router)
 app.include_router(ebay_oauth_router, prefix="/ebay", tags=["ebay"])
 app.include_router(facebook_oauth_router)
 app.include_router(offerup_oauth_router)

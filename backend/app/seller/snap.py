@@ -3,12 +3,12 @@ from __future__ import annotations
 from typing import List, Optional
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Depends, Query, status
+from fastapi import APIRouter, HTTPException, Depends, Query, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.db import SessionLocal
-from app.core.models import SnapJob, User, MyItem, CrossPost
+from app.core.models import SnapJob, User, MyItem, CrossPost, Condition
 from app.core.auth import get_current_user, require_seller
 from app.worker import celery_app
 
@@ -175,42 +175,73 @@ async def publish_snap_to_marketplace(
         raise HTTPException(status_code=403, detail="Access denied")
 
     # Create MyItem from snap job
+    condition_value = snap_job.condition_guess or "good"
+    condition_enum = (
+        Condition(condition_value)
+        if condition_value in Condition._value2member_map_
+        else Condition.good
+    )
+
     my_item = MyItem(
         user_id=current_user.id,
         title=snap_job.suggested_title or "Untitled Item",
-        description=snap_job.suggested_description or "",
-        price=request.price or snap_job.suggested_price or 0,
-        condition=snap_job.condition_guess,
         category=snap_job.detected_category or "other",
-        images=snap_job.processed_images or [],
+        attributes=snap_job.detected_attributes or {},
+        condition=condition_enum,
+        price=request.price or snap_job.suggested_price or 0,
         status="active",
     )
     db.add(my_item)
     db.flush()
 
-    # Create cross-post record
-    cross_post = CrossPost(
-        item_id=my_item.id,
-        user_id=current_user.id,
-        platforms=request.platforms,
-        status="pending",
-        notes=request.notes,
-    )
-    db.add(cross_post)
-    db.flush()
+    created_cross_posts: List[CrossPost] = []
+    for platform in request.platforms:
+        cross_post = CrossPost(
+            my_item_id=my_item.id,
+            platform=platform,
+            listing_url="",
+            status="pending",
+            meta={
+                "notes": request.notes or "",
+                "snap_job_id": snap_job.id,
+            },
+        )
+        db.add(cross_post)
+        created_cross_posts.append(cross_post)
 
-    # Enqueue cross-posting task
-    celery_app.send_task(
-        "app.tasks.cross_post.post_to_marketplaces",
-        args=[cross_post.id],
-    )
-
+    snap_job.status = "published"
     db.commit()
 
+    primary_cross_post = created_cross_posts[0]
+
     return CrossPostResponse(
-        cross_post_id=cross_post.id,
+        cross_post_id=primary_cross_post.id,
         item_id=my_item.id,
         platforms=request.platforms,
-        status=cross_post.status,
-        created_at=cross_post.created_at.isoformat() if cross_post.created_at else None,
+        status=primary_cross_post.status,
+        created_at=primary_cross_post.created_at.isoformat()
+        if primary_cross_post.created_at
+        else None,
     )
+
+
+@router.delete("/snap/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_snap_job(
+    job_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a snap draft owned by the current user."""
+    snap_job = db.query(SnapJob).filter(SnapJob.id == job_id).first()
+    if not snap_job:
+        raise HTTPException(status_code=404, detail="Snap job not found")
+    if snap_job.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+    if snap_job.status == "published":
+        raise HTTPException(
+            status_code=400,
+            detail="Published listings cannot be deleted",
+        )
+    db.delete(snap_job)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -1,32 +1,50 @@
 """Celery task for checking deal alert rules and sending notifications."""
 
 import logging
-from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy import and_, select, or_
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 
 from app.config import get_settings
 from app.core.models import DealAlertRule, Listing, NotificationPreferences, User
 from app.worker import celery_app
+from app.core.utils import utcnow
 
 logger = logging.getLogger("deal_scout.tasks.check_deal_alerts")
 
 settings = get_settings()
 
 # Async database setup
-engine = create_async_engine(
-    settings.database_url,
-    echo=False,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-)
+_database_url = settings.database_url
+_driver = make_url(_database_url).drivername
 
-AsyncSessionLocal = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False, autoflush=False, autocommit=False
-)
+if "+pysqlite" in _driver and "aiosqlite" not in _driver:
+    logger.warning(
+        "Async session disabled for driver '%s'. "
+        "Configure an async driver (e.g. sqlite+aiosqlite or postgresql+asyncpg) "
+        "to enable check_deal_alerts background tasks.",
+        _driver,
+    )
+    engine = None
+    AsyncSessionLocal = None
+else:
+    engine = create_async_engine(
+        _database_url,
+        echo=False,
+        pool_pre_ping=True,
+        pool_recycle=3600,
+    )
+
+    AsyncSessionLocal = sessionmaker(
+        engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autoflush=False,
+        autocommit=False,
+    )
 
 
 async def _find_matching_listings(db: AsyncSession, rule: DealAlertRule) -> List[Listing]:
@@ -109,7 +127,7 @@ async def _send_notification(
 
     # Check quiet hours
     if prefs and prefs.quiet_hours_enabled:
-        now = datetime.utcnow().strftime("%H:%M")
+        now = utcnow().strftime("%H:%M")
         if prefs.quiet_hours_start and prefs.quiet_hours_end:
             if prefs.quiet_hours_start <= now < prefs.quiet_hours_end:
                 logger.info(f"Skipping notification due to quiet hours for user {user.id}")
@@ -199,6 +217,12 @@ def check_all_deal_alerts():
 
 async def _check_all_deal_alerts_async():
     """Async function to check all deal alert rules."""
+    if AsyncSessionLocal is None:
+        logger.debug(
+            "Skipping check_all_deal_alerts_async because no async database driver is configured."
+        )
+        return
+
     async with AsyncSessionLocal() as db:
         try:
             # Get all enabled rules
@@ -232,7 +256,7 @@ async def _check_all_deal_alerts_async():
                             await _send_notification(db, user, rule, listing)
 
                         # Update last_triggered_at
-                        rule.last_triggered_at = datetime.utcnow()
+                        rule.last_triggered_at = utcnow()
                         await db.commit()
                     else:
                         logger.debug(f"Rule {rule.id} ({rule.name}): No matches found")
@@ -256,6 +280,12 @@ def check_price_drops():
 async def _check_price_drops_async():
     """Async function to check price drops on watchlisted items."""
     from app.core.models import WatchlistItem
+
+    if AsyncSessionLocal is None:
+        logger.debug(
+            "Skipping check_price_drops_async because no async database driver is configured."
+        )
+        return
 
     async with AsyncSessionLocal() as db:
         try:

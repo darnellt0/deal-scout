@@ -41,7 +41,12 @@ else:
 
     engine = create_engine(settings.database_url, **engine_kwargs)
 
-SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+SessionLocal = sessionmaker(
+    bind=engine,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+)
 
 
 @event.listens_for(engine, "connect")

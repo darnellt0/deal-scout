@@ -118,7 +118,7 @@ async def post_item(
             with get_session() as session:
                 facebook_account = session.query(MarketplaceAccount).filter(
                     MarketplaceAccount.user_id == current_user.id,
-                    MarketplaceAccount.marketplace == "facebook",
+                    MarketplaceAccount.platform == "facebook",
                     MarketplaceAccount.is_active == True,
                 ).first()
 
@@ -187,7 +187,7 @@ async def post_item(
             with get_session() as session:
                 offerup_account = session.query(MarketplaceAccount).filter(
                     MarketplaceAccount.user_id == current_user.id,
-                    MarketplaceAccount.marketplace == "offerup",
+                    MarketplaceAccount.platform == "offerup",
                     MarketplaceAccount.is_active == True,
                 ).first()
 

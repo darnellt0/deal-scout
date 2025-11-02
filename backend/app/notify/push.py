@@ -2,6 +2,7 @@
 
 import json
 import logging
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 import httpx
@@ -210,7 +211,7 @@ class DeviceTokenManager:
                 token_entry = {
                     "token": device_token,
                     "type": device_type,
-                    "created_at": str(__import__("datetime").datetime.utcnow()),
+                    "created_at": datetime.now(timezone.utc).isoformat(),
                 }
 
                 # Avoid duplicates

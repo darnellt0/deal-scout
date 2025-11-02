@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Tuple
 
@@ -27,7 +27,7 @@ def _parse_datetime(value: str) -> datetime:
     try:
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
     except ValueError:
-        return datetime.utcnow()
+        return datetime.now(timezone.utc)
 
 
 def _normalized_condition(value: str) -> Condition:
@@ -96,7 +96,9 @@ def load_listings_from_fixture(path: str | Path) -> Tuple[int, int]:
                 session.flush()
                 inserted += 1
 
-            posted_at = _parse_datetime(entry.get("posted_at", datetime.utcnow().isoformat()))
+            posted_at = _parse_datetime(
+                entry.get("posted_at", datetime.now(timezone.utc).isoformat())
+            )
             distance = haversine_distance(*coords, *SAN_JOSE_COORDS)
             deal_score = compute_deal_score(
                 DealScoreContext(

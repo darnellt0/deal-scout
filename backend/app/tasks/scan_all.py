@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from celery import shared_task
 
@@ -69,7 +69,7 @@ def run_scan_all(live: bool = False):
                 )
                 send_sms(f"Free: {match.title} ({match.distance_mi} mi) {match.url}")
                 notification_status = "sent"
-                sent_at = datetime.utcnow()
+                sent_at = datetime.now(timezone.utc)
                 channel = "instant"
             elif match.deal_score >= 75:
                 channel = "digest"
