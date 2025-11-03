@@ -1,9 +1,7 @@
-const FALLBACK_API = "http://localhost:8000";
-
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  FALLBACK_API;
+// Use the Next.js proxy route for browser requests
+// Browser requests use /api/proxy which is a same-origin call
+// Server-side requests (in the proxy) use http://backend:8000 (Docker internal)
+const API_BASE = typeof window !== 'undefined' ? '/api/proxy' : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://backend:8000');
 
 const FALLBACK_AUTH_TOKEN =
   process.env.NEXT_PUBLIC_AUTH_TOKEN ||

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import enum
 from datetime import datetime
-from typing import TYPE_CHECKING, List, Optional
+from typing import List, Optional
 
 from sqlalchemy import (
     Boolean,
@@ -21,9 +21,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from app.core.utils import utcnow
-
-if TYPE_CHECKING:
-    from app.models.role import Role
 
 
 class Base(DeclarativeBase):
@@ -65,17 +62,6 @@ class User(Base):
         DateTime, default=utcnow, onupdate=utcnow
     )
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
-
-    # Relationships could be added later for user_prefs, my_items, etc.
-    roles: Mapped[List["Role"]] = relationship(
-        "Role",
-        secondary="user_roles",
-        lazy="joined",
-    )
-
-    @property
-    def role_names(self) -> set[str]:
-        return {role.name for role in self.roles}
 
 
 class Listing(Base):
