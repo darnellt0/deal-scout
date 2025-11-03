@@ -18,25 +18,42 @@ def process_snap_job(job_id: int):
             return {"error": "job not found"}
 
         job.status = "processing"
+        session.commit()
+
+        # Preprocess images
         images, metadata = preprocess_images(job.input_photos)
-        captions = [
-            f"Photo {idx}" for idx, _ in enumerate(images, start=1)
-        ]  # placeholder captions
-        category, attributes = detect_item([], captions)
-        condition = estimate_condition(
-            captions, metadata[0] if metadata else {"condition_hint": "good"}
-        )
 
-        title, description = generate_listing(
-            {
-                "category": category,
-                "attributes": attributes,
-                "condition": condition,
-            }
-        )
+        # Use Claude vision API to detect items with real vision analysis
+        category, attributes = detect_item(job.input_photos)
 
-        suggested_price = 0 if category == "couch" else 200
+        # Estimate condition from vision data if available
+        condition = attributes.get("condition", "good")
+        if not condition or condition == "unknown":
+            condition = estimate_condition(
+                [attributes.get("item_type", "")],
+                metadata[0] if metadata else {"condition_hint": "good"}
+            )
 
+        # Generate metadata for listing generation
+        listing_metadata = {
+            "category": category,
+            "item_type": attributes.get("item_type", ""),
+            "condition": condition,
+            "attributes": {k: v for k, v in attributes.items() if k not in ["item_type", "condition", "notes"]},
+            "notes": attributes.get("notes", ""),
+        }
+
+        # Generate title and description using vision data
+        title, description = generate_listing(listing_metadata)
+
+        # Estimate price - use Claude's pricing if available
+        from app.vision.claude_vision import estimate_price_with_claude
+        suggested_price = estimate_price_with_claude(category, attributes)
+        if not suggested_price or suggested_price == 0:
+            # Fallback pricing logic
+            suggested_price = 200 if category != "furniture" else 150
+
+        # Update job with results
         job.detected_category = category
         job.detected_attributes = attributes
         job.processed_images = images
@@ -49,6 +66,7 @@ def process_snap_job(job_id: int):
         job.description_suggestion = description
         job.status = "ready"
 
+        # Create MyItem from the snap job
         condition_enum = (
             Condition(condition) if condition in Condition._value2member_map_ else Condition.good
         )
@@ -63,5 +81,6 @@ def process_snap_job(job_id: int):
             status="draft",
         )
         session.add(item)
+        session.commit()
 
     return {"job_id": job_id, "status": "ready"}
