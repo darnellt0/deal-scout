@@ -333,3 +333,150 @@ class WatchlistItem(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+
+# ============================================================================
+# SNAP-TO-SELL PIPELINE: COMPOSE DRAFT MODELS
+# ============================================================================
+
+
+class MediaAsset(Base):
+    """Media assets (images/videos) with processing metadata."""
+    __tablename__ = "media_assets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    snap_job_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("snap_jobs.id"), nullable=True, index=True
+    )
+    listing_draft_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("listing_drafts.id"), nullable=True, index=True
+    )
+
+    # URLs
+    original_url: Mapped[str] = mapped_column(String(500))
+    processed_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # Media metadata
+    media_type: Mapped[str] = mapped_column(String(50), default="image")  # image, video
+    mime_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    file_size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    width: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    height: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+
+    # Processing metadata
+    processing_status: Mapped[str] = mapped_column(String(50), default="pending")  # pending, processing, completed, failed
+    processing_steps: Mapped[dict] = mapped_column(JSON, default=dict)  # {brightness: true, bg_removal: true, etc.}
+    quality_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.0 to 1.0
+    ocr_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)  # Extracted text from image
+
+    # Vision metadata
+    vision_labels: Mapped[List[str]] = mapped_column(JSON, default=list)
+    vision_captions: Mapped[List[str]] = mapped_column(JSON, default=list)
+
+    # Display order (for listing galleries)
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class ListingDraft(Base):
+    """Draft listings created by the compose draft pipeline."""
+    __tablename__ = "listing_drafts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    snap_job_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("snap_jobs.id"), nullable=True, index=True
+    )
+
+    # Status
+    status: Mapped[str] = mapped_column(String(50), default="draft", index=True)  # draft, published, archived
+
+    # Listing details
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[str] = mapped_column(Text)
+    category: Mapped[str] = mapped_column(String(120))
+    attributes: Mapped[dict] = mapped_column(JSON, default=dict)  # brand, model, color, size, etc.
+    condition: Mapped[Optional[Condition]] = mapped_column(Enum(Condition))
+
+    # Pricing
+    price_suggested: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    price_low: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    price_high: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    price_rationale: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Copywriting metadata
+    bullet_highlights: Mapped[List[str]] = mapped_column(JSON, default=list)
+    tags: Mapped[List[str]] = mapped_column(JSON, default=list)
+    seo_keywords: Mapped[List[str]] = mapped_column(JSON, default=list)
+
+    # Vision metadata (from pipeline)
+    vision_confidence: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # 0.0 to 1.0
+
+    # Pipeline metadata
+    meta: Mapped[dict] = mapped_column("metadata", JSON, default=dict)  # vision, pricing, copy metadata
+
+    # Versioning (for edit history)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    parent_draft_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("listing_drafts.id"), nullable=True
+    )
+
+    # Publication tracking
+    published_item_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("my_items.id"), nullable=True
+    )
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class CrossPostJob(Base):
+    """Background job tracking for cross-posting to marketplaces."""
+    __tablename__ = "cross_post_jobs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    snap_job_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("snap_jobs.id"), nullable=True, index=True
+    )
+    listing_draft_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("listing_drafts.id"), nullable=True, index=True
+    )
+    my_item_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("my_items.id"), nullable=True, index=True
+    )
+
+    # Target platforms
+    platforms: Mapped[List[str]] = mapped_column(JSON, default=list)  # ["ebay", "facebook", "offerup"]
+
+    # Status
+    status: Mapped[str] = mapped_column(String(50), default="pending", index=True)  # pending, processing, completed, failed
+    progress: Mapped[int] = mapped_column(Integer, default=0)  # 0 to 100
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Platform-specific metadata
+    platform_metadata: Mapped[dict] = mapped_column(JSON, default=dict)  # {ebay: {...}, facebook: {...}}
+
+    # Results (created CrossPost IDs)
+    cross_post_ids: Mapped[List[int]] = mapped_column(JSON, default=list)
+
+    # Logs
+    logs: Mapped[List[str]] = mapped_column(JSON, default=list)
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

@@ -8,8 +8,10 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.db import SessionLocal
-from app.core.models import SnapJob, User, MyItem, CrossPost
+from app.core.models import SnapJob, User, MyItem, CrossPost, ListingDraft, MediaAsset
 from app.core.auth import get_current_user, require_seller
+from app.schemas.listing_draft import ListingDraftOut
+from app.schemas.media_asset import MediaAssetOut
 from app.worker import celery_app
 
 router = APIRouter()
@@ -214,3 +216,149 @@ async def publish_snap_to_marketplace(
         status=cross_post.status,
         created_at=cross_post.created_at.isoformat() if cross_post.created_at else None,
     )
+
+
+# ============================================================================
+# LISTING DRAFTS ENDPOINTS
+# ============================================================================
+
+
+@router.get("/drafts", response_model=List[ListingDraftOut])
+async def list_drafts(
+    current_user: User = Depends(get_current_user),
+    status: Optional[str] = Query(default=None, description="Filter by status (draft, published, archived)"),
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    """List listing drafts for current user.
+
+    Returns drafts created by the compose draft pipeline, ready to edit/publish.
+    """
+    query = db.query(ListingDraft).filter(ListingDraft.user_id == current_user.id)
+
+    if status:
+        query = query.filter(ListingDraft.status == status)
+
+    drafts = query.order_by(ListingDraft.created_at.desc()).limit(limit).all()
+    return drafts
+
+
+@router.get("/drafts/{draft_id}", response_model=ListingDraftOut)
+async def get_draft(
+    draft_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get a specific listing draft."""
+    draft = db.query(ListingDraft).filter(ListingDraft.id == draft_id).first()
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Verify ownership (or admin access)
+    if current_user.role.value != "admin" and draft.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return draft
+
+
+@router.get("/drafts/{draft_id}/media", response_model=List[MediaAssetOut])
+async def get_draft_media(
+    draft_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get media assets for a listing draft."""
+    draft = db.query(ListingDraft).filter(ListingDraft.id == draft_id).first()
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Verify ownership
+    if current_user.role.value != "admin" and draft.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    media_assets = (
+        db.query(MediaAsset)
+        .filter(MediaAsset.listing_draft_id == draft_id)
+        .order_by(MediaAsset.display_order)
+        .all()
+    )
+
+    return media_assets
+
+
+class DraftUpdateRequest(BaseModel):
+    """Request schema for updating a draft."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+    price_suggested: Optional[float] = None
+    category: Optional[str] = None
+    condition: Optional[str] = None
+    attributes: Optional[dict] = None
+    tags: Optional[List[str]] = None
+    status: Optional[str] = None
+
+
+@router.put("/drafts/{draft_id}", response_model=ListingDraftOut)
+async def update_draft(
+    draft_id: int,
+    request: DraftUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Update a listing draft."""
+    draft = db.query(ListingDraft).filter(ListingDraft.id == draft_id).first()
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Verify ownership
+    if draft.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Update fields if provided
+    if request.title is not None:
+        draft.title = request.title
+    if request.description is not None:
+        draft.description = request.description
+    if request.price_suggested is not None:
+        draft.price_suggested = request.price_suggested
+    if request.category is not None:
+        draft.category = request.category
+    if request.condition is not None:
+        draft.condition = request.condition
+    if request.attributes is not None:
+        draft.attributes = request.attributes
+    if request.tags is not None:
+        draft.tags = request.tags
+    if request.status is not None:
+        draft.status = request.status
+
+    db.commit()
+    db.refresh(draft)
+
+    return draft
+
+
+@router.delete("/drafts/{draft_id}")
+async def delete_draft(
+    draft_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Delete a listing draft (archives it)."""
+    draft = db.query(ListingDraft).filter(ListingDraft.id == draft_id).first()
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Verify ownership
+    if draft.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    # Archive instead of delete
+    draft.status = "archived"
+    db.commit()
+
+    return {"message": "Draft archived successfully", "draft_id": draft_id}
