@@ -28,6 +28,8 @@ class SnapRequest(BaseModel):
     photos: List[str]
     notes: Optional[str] = None
     source: str = "upload"
+    enable_crosspost_prep: bool = False
+    crosspost_platforms: Optional[List[str]] = None
 
 
 class SnapResponse(BaseModel):
@@ -87,8 +89,15 @@ async def create_snap(
     db.add(job)
     db.flush()
 
-    # Enqueue processing task
-    celery_app.send_task("app.tasks.process_snap.process_snap_job", args=[job.id])
+    # Enqueue processing task with optional cross-post prep
+    celery_app.send_task(
+        "app.tasks.process_snap.process_snap_job",
+        args=[job.id],
+        kwargs={
+            "enable_crosspost_prep": request.enable_crosspost_prep,
+            "platforms": request.crosspost_platforms,
+        }
+    )
     db.commit()
 
     return SnapResponse(job_id=job.id, status=job.status)
