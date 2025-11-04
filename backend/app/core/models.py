@@ -227,6 +227,81 @@ class SnapJob(Base):
     suggested_description: Mapped[Optional[str]] = mapped_column(Text)
     title_suggestion: Mapped[Optional[str]] = mapped_column(String(255))
     description_suggestion: Mapped[Optional[str]] = mapped_column(Text)
+    progress: Mapped[int] = mapped_column(Integer, default=0)  # 0-100 progress percentage
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    meta: Mapped[dict] = mapped_column(JSON, default=dict)  # Stores vision, pricing, copy metadata
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class ListingDraft(Base):
+    """Draft listings created from SnapJobs ready for seller review/editing."""
+    __tablename__ = "listing_drafts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    snap_job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("snap_jobs.id"), nullable=True)
+
+    # Core listing data
+    category: Mapped[str] = mapped_column(String(120))
+    attributes: Mapped[dict] = mapped_column(JSON, default=dict)
+    condition: Mapped[Optional[Condition]] = mapped_column(Enum(Condition))
+
+    # Generated content
+    title: Mapped[str] = mapped_column(String(255))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    bullet_highlights: Mapped[List[str]] = mapped_column(JSON, default=list)
+    tags: Mapped[List[str]] = mapped_column(JSON, default=list)
+
+    # Pricing suggestions
+    price_suggested: Mapped[Optional[float]] = mapped_column(Float)
+    price_low: Mapped[Optional[float]] = mapped_column(Float)
+    price_high: Mapped[Optional[float]] = mapped_column(Float)
+    pricing_rationale: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Media
+    images: Mapped[List[str]] = mapped_column(JSON, default=list)  # URLs to processed images
+
+    # Status
+    status: Mapped[str] = mapped_column(String(50), default="draft")  # draft, published, archived
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class MediaAsset(Base):
+    """Media assets (images) with processing metadata."""
+    __tablename__ = "media_assets"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    snap_job_id: Mapped[Optional[int]] = mapped_column(ForeignKey("snap_jobs.id"), index=True, nullable=True)
+    listing_draft_id: Mapped[Optional[int]] = mapped_column(ForeignKey("listing_drafts.id"), index=True, nullable=True)
+
+    # URLs
+    original_url: Mapped[str] = mapped_column(String(500))
+    processed_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    thumbnail_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+
+    # Processing metadata
+    processing_status: Mapped[str] = mapped_column(String(50), default="pending")  # pending, processing, completed, failed
+    processing_options: Mapped[dict] = mapped_column(JSON, default=dict)  # bg_removal, brighten, crop, etc.
+
+    # Image properties
+    width: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    height: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    file_size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    mime_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+
+    # Ordering
+    display_order: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow

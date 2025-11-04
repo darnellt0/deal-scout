@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.db import SessionLocal
-from app.core.models import SnapJob, User, MyItem, CrossPost
+from app.core.models import SnapJob, User, MyItem, CrossPost, ListingDraft
 from app.core.auth import get_current_user, require_seller
 from app.worker import celery_app
 
@@ -38,6 +38,8 @@ class SnapResponse(BaseModel):
 class SnapStatusResponse(BaseModel):
     job_id: int
     status: str
+    progress: int = 0  # 0-100 percentage
+    error_message: Optional[str] = None
     title: Optional[str]
     description: Optional[str]
     suggested_price: Optional[float]
@@ -46,6 +48,25 @@ class SnapStatusResponse(BaseModel):
     processed_images: List[str] = Field(default_factory=list)
     images: List[str] = Field(default_factory=list)
     created_at: Optional[str] = None
+
+
+class ListingDraftResponse(BaseModel):
+    id: int
+    snap_job_id: Optional[int]
+    category: str
+    title: str
+    description: Optional[str]
+    condition: Optional[str]
+    price_suggested: Optional[float]
+    price_low: Optional[float]
+    price_high: Optional[float]
+    pricing_rationale: Optional[str]
+    images: List[str] = Field(default_factory=list)
+    bullet_highlights: List[str] = Field(default_factory=list)
+    tags: List[str] = Field(default_factory=list)
+    status: str
+    created_at: str
+    updated_at: str
 
 
 class CrossPostRequest(BaseModel):
@@ -113,6 +134,8 @@ async def get_snap_status(
     return SnapStatusResponse(
         job_id=job.id,
         status=job.status,
+        progress=job.progress if hasattr(job, 'progress') else 0,
+        error_message=job.error_message if hasattr(job, 'error_message') else None,
         title=job.suggested_title or job.title_suggestion,
         description=job.suggested_description or job.description_suggestion,
         suggested_price=job.suggested_price,
@@ -144,6 +167,8 @@ async def list_snap_jobs(
             SnapStatusResponse(
                 job_id=job.id,
                 status=job.status,
+                progress=job.progress if hasattr(job, 'progress') else 0,
+                error_message=job.error_message if hasattr(job, 'error_message') else None,
                 title=job.suggested_title or job.title_suggestion,
                 description=job.suggested_description or job.description_suggestion,
                 suggested_price=job.suggested_price,
@@ -174,27 +199,40 @@ async def publish_snap_to_marketplace(
     if snap_job.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="Access denied")
 
+    # Convert condition string to enum
+    from app.core.models import Condition as ConditionEnum
+    try:
+        condition_enum = ConditionEnum(snap_job.condition_guess) if snap_job.condition_guess else ConditionEnum.good
+    except (ValueError, KeyError):
+        condition_enum = ConditionEnum.good
+
     # Create MyItem from snap job
     my_item = MyItem(
         user_id=current_user.id,
         title=snap_job.suggested_title or "Untitled Item",
-        description=snap_job.suggested_description or "",
         price=request.price or snap_job.suggested_price or 0,
-        condition=snap_job.condition_guess,
+        condition=condition_enum,
         category=snap_job.detected_category or "other",
-        images=snap_job.processed_images or [],
+        attributes={
+            "description": snap_job.suggested_description or "",
+            "images": snap_job.processed_images or [],
+            **(snap_job.detected_attributes or {}),
+        },
         status="active",
     )
     db.add(my_item)
     db.flush()
 
-    # Create cross-post record
+    # Create cross-post record for each platform
     cross_post = CrossPost(
-        item_id=my_item.id,
-        user_id=current_user.id,
-        platforms=request.platforms,
+        my_item_id=my_item.id,
+        platform=request.platforms[0] if request.platforms else "ebay",  # Use first platform
         status="pending",
-        notes=request.notes,
+        listing_url="",  # Will be populated when posted
+        meta={
+            "notes": request.notes,
+            "all_platforms": request.platforms,
+        },
     )
     db.add(cross_post)
     db.flush()
@@ -213,4 +251,82 @@ async def publish_snap_to_marketplace(
         platforms=request.platforms,
         status=cross_post.status,
         created_at=cross_post.created_at.isoformat() if cross_post.created_at else None,
+    )
+
+
+@router.get("/drafts", response_model=List[ListingDraftResponse])
+async def list_drafts(
+    current_user: User = Depends(get_current_user),
+    limit: int = Query(default=20, ge=1, le=100),
+    status_filter: Optional[str] = Query(default=None, description="Filter by status: draft, published, archived"),
+    db: Session = Depends(get_db),
+):
+    """List listing drafts for the current user."""
+    query = db.query(ListingDraft).filter(ListingDraft.user_id == current_user.id)
+
+    # Apply status filter if provided
+    if status_filter:
+        query = query.filter(ListingDraft.status == status_filter)
+
+    drafts = query.order_by(ListingDraft.created_at.desc()).limit(limit).all()
+
+    responses: List[ListingDraftResponse] = []
+    for draft in drafts:
+        responses.append(
+            ListingDraftResponse(
+                id=draft.id,
+                snap_job_id=draft.snap_job_id,
+                category=draft.category,
+                title=draft.title,
+                description=draft.description,
+                condition=draft.condition.value if draft.condition else None,
+                price_suggested=draft.price_suggested,
+                price_low=draft.price_low,
+                price_high=draft.price_high,
+                pricing_rationale=draft.pricing_rationale,
+                images=draft.images or [],
+                bullet_highlights=draft.bullet_highlights or [],
+                tags=draft.tags or [],
+                status=draft.status,
+                created_at=draft.created_at.isoformat() if draft.created_at else "",
+                updated_at=draft.updated_at.isoformat() if draft.updated_at else "",
+            )
+        )
+
+    return responses
+
+
+@router.get("/drafts/{draft_id}", response_model=ListingDraftResponse)
+async def get_draft(
+    draft_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get a specific listing draft by ID."""
+    draft = db.query(ListingDraft).filter(ListingDraft.id == draft_id).first()
+
+    if not draft:
+        raise HTTPException(status_code=404, detail="Draft not found")
+
+    # Verify ownership
+    if current_user.role.value != "admin" and draft.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return ListingDraftResponse(
+        id=draft.id,
+        snap_job_id=draft.snap_job_id,
+        category=draft.category,
+        title=draft.title,
+        description=draft.description,
+        condition=draft.condition.value if draft.condition else None,
+        price_suggested=draft.price_suggested,
+        price_low=draft.price_low,
+        price_high=draft.price_high,
+        pricing_rationale=draft.pricing_rationale,
+        images=draft.images or [],
+        bullet_highlights=draft.bullet_highlights or [],
+        tags=draft.tags or [],
+        status=draft.status,
+        created_at=draft.created_at.isoformat() if draft.created_at else "",
+        updated_at=draft.updated_at.isoformat() if draft.updated_at else "",
     )
