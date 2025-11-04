@@ -227,6 +227,7 @@ class SnapJob(Base):
     suggested_description: Mapped[Optional[str]] = mapped_column(Text)
     title_suggestion: Mapped[Optional[str]] = mapped_column(String(255))
     description_suggestion: Mapped[Optional[str]] = mapped_column(Text)
+    meta: Mapped[dict] = mapped_column("metadata", JSON, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow

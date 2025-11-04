@@ -4,7 +4,7 @@ from celery import shared_task
 
 from app.core.db import get_session
 from app.core.models import Condition, MyItem, SnapJob
-from app.seller.auto_write import generate_listing
+from app.seller.copywriter import generate_copy
 from app.vision.cleanup import preprocess_images
 from app.vision.condition import estimate_condition
 from app.vision.detector import detect_item
@@ -27,26 +27,38 @@ def process_snap_job(job_id: int):
             captions, metadata[0] if metadata else {"condition_hint": "good"}
         )
 
-        title, description = generate_listing(
-            {
-                "category": category,
-                "attributes": attributes,
-                "condition": condition,
-            }
-        )
-
+        # Generate suggested price first (needed for copywriting)
         suggested_price = 0 if category == "couch" else 200
 
+        # Generate comprehensive listing copy (title, description, highlights, tags)
+        photos_count = len(images)
+        copy_data = generate_copy(
+            category=category,
+            attributes=attributes,
+            condition=condition,
+            price=suggested_price,
+            photos_count=photos_count,
+        )
+
+        # Store all results in the SnapJob
         job.detected_category = category
         job.detected_attributes = attributes
         job.processed_images = images
         job.condition_guess = condition
         job.price_suggestion_cents = int(suggested_price * 100)
-        job.suggested_title = title
-        job.suggested_description = description
         job.suggested_price = suggested_price
-        job.title_suggestion = title
-        job.description_suggestion = description
+
+        # Store copy results in legacy fields and meta.copy
+        job.suggested_title = copy_data["title"]
+        job.suggested_description = copy_data["description"]
+        job.title_suggestion = copy_data["title"]
+        job.description_suggestion = copy_data["description"]
+
+        # Store comprehensive copy data in meta.copy
+        if job.meta is None:
+            job.meta = {}
+        job.meta["copy"] = copy_data
+
         job.status = "ready"
 
         condition_enum = (
@@ -54,7 +66,7 @@ def process_snap_job(job_id: int):
         )
 
         item = MyItem(
-            title=title,
+            title=copy_data["title"],
             category=category,
             attributes=attributes,
             condition=condition_enum,
