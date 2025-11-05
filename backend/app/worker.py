@@ -42,6 +42,28 @@ celery_app.conf.update(
             "task": "check_price_drops",
             "schedule": 3600.0,  # 1 hour
         },
+        # Phase 7: Digest Emails
+        "send-daily-digests": {
+            "task": "send_daily_digests",
+            "schedule": crontab(hour=9, minute=0),  # 9 AM daily
+        },
+        "send-weekly-digests": {
+            "task": "send_weekly_digests",
+            "schedule": crontab(day_of_week=1, hour=9, minute=0),  # Monday 9 AM
+        },
+        "cleanup-old-notifications-weekly": {
+            "task": "cleanup_old_notifications",
+            "schedule": crontab(day_of_week=0, hour=2, minute=0),  # Sunday 2 AM
+        },
+        # Phase 7: Price Analysis
+        "update-all-price-analyses-daily": {
+            "task": "update_all_price_analyses",
+            "schedule": crontab(hour=3, minute=30),  # 3:30 AM daily
+        },
+        "analyze-new-listings-hourly": {
+            "task": "analyze_new_listings",
+            "schedule": crontab(minute=30),  # Every hour at :30
+        },
     },
 )
 

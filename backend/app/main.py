@@ -34,6 +34,7 @@ from app.routes.push_notifications import router as push_notifications_router
 from app.routes.facebook_oauth import router as facebook_oauth_router
 from app.routes.offerup_oauth import router as offerup_oauth_router
 from app.routes.deal_alerts import router as deal_alerts_router
+from app.routes.pricing_analytics import router as pricing_analytics_router
 from app.seller.post import router as post_router
 from app.seller.snap import router as snap_router
 from app.seller.pricing import router as pricing_router
@@ -248,6 +249,7 @@ app.include_router(marketplace_accounts_router)
 app.include_router(notification_preferences_router)
 app.include_router(push_notifications_router)
 app.include_router(deal_alerts_router)
+app.include_router(pricing_analytics_router)
 
 # Marketplace and seller routes
 app.include_router(snap_router, prefix="/seller", tags=["seller"])

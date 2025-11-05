@@ -334,3 +334,39 @@ class WatchlistItem(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+
+class PriceAnalysis(Base):
+    """Price analysis results for listings."""
+    __tablename__ = "price_analysis"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id"), index=True)
+
+    # Analysis timestamp
+    analyzed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+
+    # Market metrics
+    market_avg: Mapped[float] = mapped_column(Float)
+    market_median: Mapped[float] = mapped_column(Float)
+    market_min: Mapped[float] = mapped_column(Float)
+    market_max: Mapped[float] = mapped_column(Float)
+
+    # Comparables
+    comparable_count: Mapped[int] = mapped_column(Integer)
+
+    # Recommendation
+    recommended_price: Mapped[float] = mapped_column(Float)
+    price_range_min: Mapped[float] = mapped_column(Float)
+    price_range_max: Mapped[float] = mapped_column(Float)
+
+    # Trend analysis
+    price_trend: Mapped[str] = mapped_column(String(50))  # "increasing", "stable", "decreasing"
+    trend_pct_change: Mapped[float] = mapped_column(Float)
+
+    # Confidence level
+    confidence: Mapped[str] = mapped_column(String(20))  # "low", "medium", "high"
+
+    # ML predictions (optional, for future use)
+    ml_predicted_price: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    ml_confidence_score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)

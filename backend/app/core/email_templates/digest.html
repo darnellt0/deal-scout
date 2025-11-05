@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Deal Digest - Deal Scout</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #4CAF50;
+        }
+        .header h1 {
+            color: #4CAF50;
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+        .header p {
+            color: #666;
+            margin: 0;
+            font-size: 16px;
+        }
+        .summary {
+            background-color: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 4px;
+        }
+        .summary p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .summary strong {
+            color: #4CAF50;
+            font-size: 24px;
+        }
+        .deal-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease;
+        }
+        .deal-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .deal-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: #f0f0f0;
+        }
+        .deal-content {
+            padding: 15px;
+        }
+        .deal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 10px 0;
+            line-height: 1.3;
+        }
+        .deal-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .deal-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .deal-score {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .deal-score.good {
+            background-color: #4CAF50;
+        }
+        .deal-score.great {
+            background-color: #FF9800;
+        }
+        .deal-score.excellent {
+            background-color: #F44336;
+        }
+        .deal-details {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 12px;
+        }
+        .deal-details span {
+            margin-right: 15px;
+        }
+        .deal-details .label {
+            font-weight: 600;
+            color: #333;
+        }
+        .deal-button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        .deal-button:hover {
+            background-color: #45a049;
+        }
+        .no-deals {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+        }
+        .footer a {
+            color: #4CAF50;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #4CAF50;
+            display: block;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🔍 Your Deal Digest</h1>
+            <p>{{ digest_date }}</p>
+        </div>
+
+        <!-- Summary -->
+        <div class="summary">
+            <p>Hi <strong>{{ user_name }}</strong>,</p>
+            <p>We found <strong>{{ deal_count }}</strong> deals matching your preferences!</p>
+        </div>
+
+        <!-- Stats Grid -->
+        {% if stats %}
+        <div class="stats-grid">
+            <div class="stat-box">
+                <span class="stat-value">{{ stats.total_deals }}</span>
+                <span class="stat-label">Total Deals</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-value">${{ stats.avg_savings }}</span>
+                <span class="stat-label">Avg Savings</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Deals -->
+        {% if deals %}
+            {% for deal in deals %}
+            <div class="deal-card">
+                {% if deal.image_url %}
+                <img src="{{ deal.image_url }}" alt="{{ deal.title }}" class="deal-image">
+                {% endif %}
+
+                <div class="deal-content">
+                    <h2 class="deal-title">{{ deal.title }}</h2>
+
+                    <div class="deal-meta">
+                        <span class="deal-price">${{ deal.price }}</span>
+                        {% if deal.deal_score %}
+                        <span class="deal-score {% if deal.deal_score >= 0.9 %}excellent{% elif deal.deal_score >= 0.7 %}great{% else %}good{% endif %}">
+                            {{ (deal.deal_score * 100) | round }}% Deal Score
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <div class="deal-details">
+                        {% if deal.category %}
+                        <span><span class="label">Category:</span> {{ deal.category }}</span>
+                        {% endif %}
+                        {% if deal.condition %}
+                        <span><span class="label">Condition:</span> {{ deal.condition }}</span>
+                        {% endif %}
+                        {% if deal.marketplace %}
+                        <span><span class="label">From:</span> {{ deal.marketplace }}</span>
+                        {% endif %}
+                    </div>
+
+                    {% if deal.description %}
+                    <p style="color: #666; font-size: 14px; margin: 0 0 15px 0; line-height: 1.5;">
+                        {{ deal.description[:150] }}{% if deal.description|length > 150 %}...{% endif %}
+                    </p>
+                    {% endif %}
+
+                    <a href="{{ deal.url }}" class="deal-button">View Deal →</a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-deals">
+                <p style="font-size: 18px; color: #666;">No new deals found matching your preferences.</p>
+                <p style="font-size: 14px;">Try adjusting your alert rules to see more deals!</p>
+            </div>
+        {% endif %}
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                <a href="{{ app_url }}/notification-preferences">Manage Notification Preferences</a> |
+                <a href="{{ app_url }}/deal-alert-rules">Manage Alert Rules</a>
+            </p>
+            <p style="margin-top: 10px;">
+                You're receiving this because you have digest emails enabled.<br>
+                Don't want these emails? <a href="{{ unsubscribe_url }}">Unsubscribe</a>
+            </p>
+            <p style="margin-top: 15px; color: #ccc;">
+                © 2025 Deal Scout. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

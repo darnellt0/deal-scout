@@ -1,0 +1,54 @@
+================================================================
+                    YOUR DEAL DIGEST
+                      Deal Scout
+================================================================
+
+{{ digest_date }}
+
+Hi {{ user_name }},
+
+We found {{ deal_count }} deals matching your preferences!
+
+{% if stats %}
+QUICK STATS:
+- Total Deals: {{ stats.total_deals }}
+- Average Savings: ${{ stats.avg_savings }}
+{% endif %}
+
+================================================================
+
+{% if deals %}
+{% for deal in deals %}
+{{ loop.index }}. {{ deal.title }}
+   ---------------------------------------------------------
+   Price: ${{ deal.price }}
+   {% if deal.deal_score %}Deal Score: {{ (deal.deal_score * 100) | round }}%{% endif %}
+
+   {% if deal.category %}Category: {{ deal.category }}{% endif %}
+   {% if deal.condition %}Condition: {{ deal.condition }}{% endif %}
+   {% if deal.marketplace %}Marketplace: {{ deal.marketplace }}{% endif %}
+
+   {% if deal.description %}
+   {{ deal.description[:200] }}{% if deal.description|length > 200 %}...{% endif %}
+   {% endif %}
+
+   View Deal: {{ deal.url }}
+
+{% endfor %}
+{% else %}
+No new deals found matching your preferences.
+Try adjusting your alert rules to see more deals!
+{% endif %}
+
+================================================================
+
+MANAGE YOUR PREFERENCES:
+- Notification Settings: {{ app_url }}/notification-preferences
+- Alert Rules: {{ app_url }}/deal-alert-rules
+
+You're receiving this because you have digest emails enabled.
+Don't want these emails? Unsubscribe: {{ unsubscribe_url }}
+
+© 2025 Deal Scout. All rights reserved.
+
+================================================================
