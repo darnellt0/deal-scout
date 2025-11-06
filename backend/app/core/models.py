@@ -334,3 +334,65 @@ class WatchlistItem(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+
+
+# ============================================================================
+# MARKETPLACE INTEGRATIONS & CROSS-POSTING
+# ============================================================================
+
+
+class SellerIntegration(Base):
+    """OAuth integrations for cross-posting to marketplaces."""
+    __tablename__ = "seller_integrations"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    seller_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(50), index=True)  # 'ebay', 'facebook', 'offerup'
+
+    # OAuth tokens
+    access_token: Mapped[str] = mapped_column(Text)
+    refresh_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Marketplace configuration
+    marketplace_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # e.g., 'EBAY_US'
+    location_key: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # eBay inventory location
+
+    # eBay policy IDs
+    payment_policy_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    fulfillment_policy_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    return_policy_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+
+    # Metadata
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+    __table_args__ = (
+        UniqueConstraint("seller_id", "provider", name="uq_seller_provider"),
+    )
+
+
+class CrossPostResult(Base):
+    """Track cross-posting results to various marketplaces."""
+    __tablename__ = "crosspost_results"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    listing_id: Mapped[int] = mapped_column(ForeignKey("listings.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(50), index=True)  # 'ebay', 'facebook', 'offerup'
+
+    # Provider-specific IDs
+    provider_offer_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # eBay offer ID
+    provider_item_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)   # eBay item ID
+    provider_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)       # Public listing URL
+
+    # Status and metadata
+    status: Mapped[str] = mapped_column(String(50), default="draft")  # 'published', 'error', 'draft'
+    raw_response: Mapped[dict] = mapped_column(JSON, default=dict)    # Full API response for debugging
+
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )

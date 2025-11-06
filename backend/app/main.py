@@ -23,7 +23,8 @@ from app.core.utils import haversine_distance
 from app.core.exception_handlers import register_exception_handlers
 from app.buyer.routes import router as buyer_router
 from app.routes.auth import router as auth_router
-from app.routes.ebay_oauth import router as ebay_oauth_router
+from app.routes.ebay_auth import router as ebay_auth_router
+from app.routes.ebay_publish import router as ebay_publish_router
 from app.routes.listings import router as listings_router
 from app.routes.my_items import router as my_items_router
 from app.routes.orders import router as orders_router
@@ -254,7 +255,8 @@ app.include_router(snap_router, prefix="/seller", tags=["seller"])
 app.include_router(post_router, prefix="/seller", tags=["seller"])
 app.include_router(pricing_router, prefix="/seller", tags=["seller"])
 app.include_router(buyer_router, prefix="/buyer", tags=["buyer"])
-app.include_router(ebay_oauth_router, prefix="/ebay", tags=["ebay"])
+app.include_router(ebay_auth_router)  # OAuth and integration setup
+app.include_router(ebay_publish_router)  # Cross-posting to eBay
 app.include_router(facebook_oauth_router)
 app.include_router(offerup_oauth_router)
 app.include_router(tasks_router, prefix="/tasks", tags=["tasks"])

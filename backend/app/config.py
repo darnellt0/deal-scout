@@ -50,15 +50,11 @@ class Settings(BaseSettings):
     vision_enabled: bool = Field(True, json_schema_extra={"env": "VISION_ENABLED"})
     rembg_enabled: bool = Field(True, json_schema_extra={"env": "REMBG_ENABLED"})
 
-    # eBay
+    # eBay OAuth Integration
     ebay_env: str = Field("sandbox", json_schema_extra={"env": "EBAY_ENV"})
-    ebay_app_id: str = Field("", json_schema_extra={"env": "EBAY_APP_ID"})
-    ebay_cert_id: str = Field("", json_schema_extra={"env": "EBAY_CERT_ID"})
-    ebay_dev_id: str = Field("", json_schema_extra={"env": "EBAY_DEV_ID"})
-    ebay_oauth_token: str = Field("", json_schema_extra={"env": "EBAY_OAUTH_TOKEN"})
-    ebay_refresh_token: str = Field("", json_schema_extra={"env": "EBAY_REFRESH_TOKEN"})
-    ebay_redirect_uri: str = Field("urn:ietf:wg:oauth:2.0:oob", json_schema_extra={"env": "EBAY_REDIRECT_URI"})
-    ebay_scope: str = Field("", json_schema_extra={"env": "EBAY_SCOPE"})
+    ebay_client_id: str = Field("", json_schema_extra={"env": "EBAY_CLIENT_ID"})
+    ebay_client_secret: str = Field("", json_schema_extra={"env": "EBAY_CLIENT_SECRET"})
+    ebay_redirect_uri: str = Field("http://localhost:8000/integrations/ebay/callback", json_schema_extra={"env": "EBAY_REDIRECT_URI"})
     ebay_marketplace_id: str = Field("EBAY_US", json_schema_extra={"env": "EBAY_MARKETPLACE_ID"})
 
     # Craigslist
@@ -190,7 +186,7 @@ def get_settings() -> Settings:
     if settings.is_production():
         if not settings.openai_api_key:
             logger.warning("Production mode: OPENAI_API_KEY is not configured")
-        if not settings.ebay_app_id:
+        if not settings.ebay_client_id or not settings.ebay_client_secret:
             logger.warning("Production mode: eBay credentials are not configured")
         if settings.demo_mode:
             logger.warning("Production mode: DEMO_MODE is enabled (should be false)")
