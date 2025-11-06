@@ -1,0 +1,79 @@
+{% extends "emails/digest_base.html" %}
+
+{% block content %}
+    {% if deals %}
+        <div class="stats">
+            <h3>Today's Summary</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="number">{{ total_deals }}</div>
+                    <div class="label">New Deals</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number">{{ matching_rules }}</div>
+                    <div class="label">Matched Rules</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number">${{ avg_price }}</div>
+                    <div class="label">Avg Price</div>
+                </div>
+                <div class="stat-item">
+                    <div class="number">{{ free_deals }}</div>
+                    <div class="label">Free Items</div>
+                </div>
+            </div>
+        </div>
+
+        <h2 style="color: #333; margin-top: 30px;">Top Deals Today</h2>
+
+        {% for deal in deals %}
+        <div class="deal-card">
+            <h3>
+                {{ deal.title }}
+                {% if deal.deal_score %}
+                <span class="deal-score">{{ (deal.deal_score * 100) | int }}% match</span>
+                {% endif %}
+            </h3>
+
+            <div class="price">${{ deal.price }}</div>
+
+            <div class="details">
+                <span>{{ deal.category or 'General' }}</span>
+                <span>{{ deal.condition or 'N/A' }}</span>
+                <span>{{ deal.source }}</span>
+            </div>
+
+            {% if deal.description %}
+            <div class="description">
+                {{ deal.description[:150] }}{% if deal.description|length > 150 %}...{% endif %}
+            </div>
+            {% endif %}
+
+            <a href="{{ deal.url }}" class="cta">View Deal</a>
+        </div>
+        {% endfor %}
+
+        {% if recommendations %}
+        <div style="margin-top: 40px;">
+            <h2 style="color: #333;">Recommended for You</h2>
+            {% for rec in recommendations %}
+            <div class="deal-card">
+                <h3>{{ rec.title }}</h3>
+                <div class="price">${{ rec.price }}</div>
+                <div class="details">
+                    <span>{{ rec.category or 'General' }}</span>
+                    <span>{{ rec.condition or 'N/A' }}</span>
+                </div>
+                <a href="{{ rec.url }}" class="cta">View Deal</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    {% else %}
+        <div class="empty-state">
+            <p style="font-size: 18px; color: #666;">No new deals matched your criteria today.</p>
+            <p>Try adjusting your <a href="{{ preferences_url }}">alert rules</a> to discover more deals!</p>
+        </div>
+    {% endif %}
+{% endblock %}

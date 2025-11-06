@@ -124,3 +124,197 @@ async def update_frequency(
     await db.commit()
     await db.refresh(prefs)
     return prefs
+
+
+class UpdateQuietHours(BaseModel):
+    """Update quiet hours settings."""
+    enabled: bool
+    start_time: Optional[str] = None  # HH:MM format
+    end_time: Optional[str] = None    # HH:MM format
+
+
+class UpdateCategories(BaseModel):
+    """Update category filters."""
+    categories: List[str]
+
+
+class UpdatePhone(BaseModel):
+    """Update phone number for SMS."""
+    phone_number: str
+
+
+class VerifyPhone(BaseModel):
+    """Verify phone number with OTP."""
+    otp: str
+
+
+class UpdateDiscord(BaseModel):
+    """Update Discord webhook URL."""
+    webhook_url: str
+
+
+@router.patch("/quiet-hours", response_model=NotificationPreferencesResponse)
+async def update_quiet_hours(
+    data: UpdateQuietHours,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update quiet hours settings to prevent notifications during sleep."""
+    prefs = await _get_or_create_preferences(db, current_user.id)
+    prefs.quiet_hours_enabled = data.enabled
+
+    if data.enabled:
+        if not data.start_time or not data.end_time:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="start_time and end_time are required when enabling quiet hours",
+            )
+        prefs.quiet_hours_start = data.start_time
+        prefs.quiet_hours_end = data.end_time
+
+    prefs.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(prefs)
+    return prefs
+
+
+@router.patch("/categories", response_model=NotificationPreferencesResponse)
+async def update_category_filters(
+    data: UpdateCategories,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Update category filters to only receive notifications for specific categories."""
+    prefs = await _get_or_create_preferences(db, current_user.id)
+    prefs.category_filters = data.categories
+    prefs.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(prefs)
+    return prefs
+
+
+@router.post("/phone", response_model=NotificationPreferencesResponse)
+async def add_phone_number(
+    data: UpdatePhone,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Add phone number for SMS notifications (requires verification)."""
+    # TODO: Send OTP via SMS using Twilio
+    prefs = await _get_or_create_preferences(db, current_user.id)
+    prefs.phone_number = data.phone_number
+    prefs.phone_verified = False  # Will be set to True after OTP verification
+    prefs.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(prefs)
+    return prefs
+
+
+@router.post("/phone/verify", response_model=NotificationPreferencesResponse)
+async def verify_phone_number(
+    data: VerifyPhone,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Verify phone number with OTP code."""
+    # TODO: Verify OTP code
+    prefs = await _get_or_create_preferences(db, current_user.id)
+
+    if not prefs.phone_number:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No phone number to verify",
+        )
+
+    # For now, accept any OTP (TODO: implement actual verification)
+    if data.otp and len(data.otp) == 6:
+        prefs.phone_verified = True
+        prefs.updated_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(prefs)
+        return prefs
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid OTP code",
+        )
+
+
+@router.delete("/phone", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_phone_number(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Remove phone number from SMS notifications."""
+    prefs = await _get_or_create_preferences(db, current_user.id)
+    prefs.phone_number = None
+    prefs.phone_verified = False
+    prefs.updated_at = datetime.utcnow()
+    await db.commit()
+
+
+@router.post("/discord-webhook", response_model=NotificationPreferencesResponse)
+async def add_discord_webhook(
+    data: UpdateDiscord,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Add Discord webhook URL for notifications."""
+    prefs = await _get_or_create_preferences(db, current_user.id)
+    prefs.discord_webhook_url = data.webhook_url
+    prefs.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(prefs)
+    return prefs
+
+
+@router.post("/discord-webhook/test", status_code=status.HTTP_200_OK)
+async def test_discord_webhook(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Send a test message to Discord webhook."""
+    prefs = await _get_or_create_preferences(db, current_user.id)
+
+    if not prefs.discord_webhook_url:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No Discord webhook URL configured",
+        )
+
+    try:
+        import aiohttp
+
+        async with aiohttp.ClientSession() as session:
+            embed = {
+                "title": "Test Notification",
+                "description": "This is a test notification from Deal Scout",
+                "color": 0x00FF00,
+            }
+            async with session.post(
+                prefs.discord_webhook_url, json={"embeds": [embed]}
+            ) as resp:
+                if resp.status == 204:
+                    return {"status": "success", "message": "Test notification sent"}
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Discord webhook returned status {resp.status}",
+                    )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Failed to send test notification: {str(e)}",
+        )
+
+
+@router.delete("/discord-webhook", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_discord_webhook(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Remove Discord webhook URL."""
+    prefs = await _get_or_create_preferences(db, current_user.id)
+    prefs.discord_webhook_url = None
+    prefs.updated_at = datetime.utcnow()
+    await db.commit()

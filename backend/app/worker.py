@@ -42,6 +42,15 @@ celery_app.conf.update(
             "task": "check_price_drops",
             "schedule": 3600.0,  # 1 hour
         },
+        # Phase 7: Digest Emails
+        "send-daily-digests": {
+            "task": "send_daily_digests",
+            "schedule": crontab(hour=9, minute=0),  # 9 AM daily
+        },
+        "send-weekly-digests": {
+            "task": "send_weekly_digests",
+            "schedule": crontab(day_of_week=1, hour=9, minute=0),  # Monday at 9 AM
+        },
     },
 )
 
