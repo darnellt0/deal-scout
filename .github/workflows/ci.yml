@@ -26,10 +26,10 @@ jobs:
         run: python -m compileall backend/app
 
       - name: Run backend tests
-        run: cd backend && pytest -q
+        run: pytest -q
         env:
-          PYTHONPATH: .
-        working-directory: backend
+          PYTHONPATH: backend
+        working-directory: .
 
       - name: Lint docker compose
         run: docker compose -f docker-compose.yml config
