@@ -5,7 +5,7 @@ from collections import Counter
 from typing import Dict, List, Tuple
 
 from app.config import get_settings
-from app.vision.gemini_vision import analyze_items_with_gemini
+from app.vision.claude_vision import analyze_items_with_claude
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
@@ -45,8 +45,8 @@ def detect_from_text(captions: List[str]) -> Tuple[str, Dict]:
 
 def detect_item(image_paths: List[str], captions: List[str] = None) -> Tuple[str, Dict]:
     """
-    Detect items from images using Google Gemini vision API if available.
-    Falls back to keyword-based detection if Gemini is not configured.
+    Detect items from images using Claude vision API if available.
+    Falls back to keyword-based detection if Claude is not configured.
 
     Args:
         image_paths: List of image file paths to analyze
@@ -58,9 +58,9 @@ def detect_item(image_paths: List[str], captions: List[str] = None) -> Tuple[str
     if not settings.vision_enabled:
         return "unknown", {}
 
-    # Try Gemini vision API first if configured
-    if settings.google_api_key:
-        category, attributes = analyze_items_with_gemini(image_paths)
+    # Try Claude vision API first if configured
+    if settings.anthropic_api_key:
+        category, attributes = analyze_items_with_claude(image_paths)
         if category != "unknown":
             return category, attributes
 

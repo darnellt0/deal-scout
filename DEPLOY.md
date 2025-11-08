@@ -91,10 +91,11 @@ This guide covers deploying Deal Scout to production using **Render** (backend/w
    FEATURE_ADV_VISION=false
    FEATURE_LIVE_PRICING=false
 
-   # AI Services (required)
-   ANTHROPIC_API_KEY=<your-claude-api-key>
-   # OR
+   # AI Services (required for vision)
+   GOOGLE_API_KEY=<your-gemini-api-key>
+   # Optional - for listing generation
    OPENAI_API_KEY=<your-openai-api-key>
+   ANTHROPIC_API_KEY=<your-claude-api-key>
 
    # Image Storage (S3 - required for production)
    AWS_REGION=us-west-2
@@ -421,3 +422,56 @@ Render Starter plan includes daily backups. To manually backup:
 ---
 
 **🎉 Deployment Complete!** Visit your frontend URL and start cross-posting!
+
+## Part 7: Multi-Agent Concurrent Processing (Advanced)
+
+For high-volume deployments, scale workers horizontally:
+
+### Deploy Multiple Worker Instances
+
+1. In Render Dashboard, duplicate the worker service:
+   - **Worker 1**: `deal-scout-worker-1` (concurrency=4)
+   - **Worker 2**: `deal-scout-worker-2` (concurrency=4)
+   - **Worker 3**: `deal-scout-worker-3` (concurrency=4)
+
+2. **Update Start Command** for each worker:
+   ```bash
+   # Worker 1
+   celery -A app.worker worker --loglevel=info --concurrency=4 -n worker1@%h
+
+   # Worker 2
+   celery -A app.worker worker --loglevel=info --concurrency=4 -n worker2@%h
+
+   # Worker 3
+   celery -A app.worker worker --loglevel=info --concurrency=4 -n worker3@%h
+   ```
+
+3. **Result**: 12 concurrent agents processing photos simultaneously
+
+### Cost vs Performance
+
+| Configuration | Monthly Cost | Throughput |
+|---------------|-------------|------------|
+| 1 worker (4 agents) | $7 | ~500 photos/hour |
+| 2 workers (8 agents) | $14 | ~1000 photos/hour |
+| 3 workers (12 agents) | $21 | ~1500 photos/hour |
+| 4 workers (16 agents) | $28 | ~2000 photos/hour |
+
+### Monitoring Workers
+
+**Check active workers:**
+```bash
+# In Render shell
+celery -A app.worker inspect active
+```
+
+**View queue depth:**
+```bash
+# In Redis shell (Render Redis instance)
+redis-cli
+> LLEN celery
+```
+
+For detailed multi-agent setup, see [MULTI_AGENT_GUIDE.md](./MULTI_AGENT_GUIDE.md).
+
+---

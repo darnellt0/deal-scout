@@ -23,7 +23,7 @@ def process_snap_job(job_id: int):
         # Preprocess images
         images, metadata = preprocess_images(job.input_photos)
 
-        # Use Claude vision API to detect items with real vision analysis
+        # Use Gemini vision API to detect items with real vision analysis
         category, attributes = detect_item(job.input_photos)
 
         # Estimate condition from vision data if available
@@ -46,9 +46,9 @@ def process_snap_job(job_id: int):
         # Generate title and description using vision data
         title, description = generate_listing(listing_metadata)
 
-        # Estimate price - use Claude's pricing if available
-        from app.vision.claude_vision import estimate_price_with_claude
-        suggested_price = estimate_price_with_claude(category, attributes)
+        # Estimate price - use Gemini's pricing if available
+        from app.vision.gemini_vision import estimate_price_with_gemini
+        suggested_price = estimate_price_with_gemini(category, attributes)
         if not suggested_price or suggested_price == 0:
             # Fallback pricing logic
             suggested_price = 200 if category != "furniture" else 150

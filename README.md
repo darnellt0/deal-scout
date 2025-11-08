@@ -30,10 +30,12 @@ cp .env.example .env
 Edit `.env` with your API keys (optional for demo mode):
 
 ```bash
-# Required for AI features
-ANTHROPIC_API_KEY=your-key-here
-# OR
+# Required for AI vision (item detection)
+GOOGLE_API_KEY=your-gemini-api-key-here
+
+# Optional - for listing generation
 OPENAI_API_KEY=your-key-here
+ANTHROPIC_API_KEY=your-key-here
 
 # Optional - S3 for image hosting (recommended for production)
 AWS_REGION=us-west-2
@@ -117,7 +119,7 @@ deal-scout/
 ### ✅ Implemented (Seller MVP)
 
 - **Snap Studio**: Upload photos → AI detection → auto-generated listings
-- **Claude Vision**: Real item detection with category, condition, attributes
+- **Google Gemini Vision**: Real item detection with category, condition, attributes
 - **Cross-posting**: Publish to eBay, Facebook, OfferUp simultaneously
 - **OAuth Integration**: Connect marketplace accounts
 - **Price Suggestions**: Comp-based pricing from eBay sold listings
@@ -304,7 +306,8 @@ npm test
 
 ### Optional but Recommended
 
-- `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` - For AI vision
+- `GOOGLE_API_KEY` - For Google Gemini vision (required)
+- `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` - For listing generation (optional)
 - `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `S3_BUCKET` - For image hosting
 - `EBAY_APP_ID`, `EBAY_CERT_ID`, `EBAY_DEV_ID` - For eBay integration
 - `FACEBOOK_APP_ID`, `FACEBOOK_APP_SECRET` - For Facebook integration
@@ -342,4 +345,4 @@ See [DEPLOY.md](./DEPLOY.md) for production deployment guide (Render + Vercel).
 
 ---
 
-**Built with**: FastAPI • Next.js • Celery • Redis • Postgres • Claude AI • Docker
+**Built with**: FastAPI • Next.js • Celery • Redis • Postgres • Google Gemini • Docker

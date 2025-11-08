@@ -48,8 +48,9 @@ class Settings(BaseSettings):
     # AI Services
     openai_api_key: str = Field("", json_schema_extra={"env": "OPENAI_API_KEY"})
     anthropic_api_key: str = Field("", json_schema_extra={"env": "ANTHROPIC_API_KEY"})
+    google_api_key: str = Field("", json_schema_extra={"env": "GOOGLE_API_KEY"})
     vision_enabled: bool = Field(True, json_schema_extra={"env": "VISION_ENABLED"})
-    vision_model: str = Field("claude", json_schema_extra={"env": "VISION_MODEL"})
+    vision_model: str = Field("gemini", json_schema_extra={"env": "VISION_MODEL"})
     rembg_enabled: bool = Field(True, json_schema_extra={"env": "REMBG_ENABLED"})
 
     # eBay
