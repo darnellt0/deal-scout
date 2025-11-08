@@ -21,21 +21,24 @@ from app.core.db import get_session, engine
 from app.core.models import Base, Listing, ListingScore
 from app.core.utils import haversine_distance
 from app.core.exception_handlers import register_exception_handlers
-from app.buyer.routes import router as buyer_router
+# Seller routes (CORE MVP)
 from app.routes.auth import router as auth_router
 from app.routes.ebay_oauth import router as ebay_oauth_router
-from app.routes.listings import router as listings_router
 from app.routes.my_items import router as my_items_router
 from app.routes.orders import router as orders_router
 from app.routes.comps import router as comps_router
 from app.routes.marketplace_accounts import router as marketplace_accounts_router
-from app.routes.notification_preferences import router as notification_preferences_router
-from app.routes.push_notifications import router as push_notifications_router
 from app.routes.facebook_oauth import router as facebook_oauth_router
 from app.routes.offerup_oauth import router as offerup_oauth_router
-from app.routes.deal_alerts import router as deal_alerts_router
 from app.routes.inventory import router as inventory_router
 from app.routes.cross_posts import router as cross_posts_router
+
+# Buyer routes (PARKED - enable with FEATURE_BUYER=true)
+# from app.buyer.routes import router as buyer_router
+# from app.routes.listings import router as listings_router
+# from app.routes.notification_preferences import router as notification_preferences_router
+# from app.routes.push_notifications import router as push_notifications_router
+# from app.routes.deal_alerts import router as deal_alerts_router
 from app.middleware.mode_from_path import PathModeMiddleware
 from app.seller.post import router as post_router
 from app.seller.snap import router as snap_router
@@ -204,76 +207,24 @@ async def health():
     return JSONResponse(payload, status_code=status_code)
 
 
-@app.get("/listings")
-async def public_listings(
-    category: Optional[str] = Query(default=None),
-    price_max: Optional[float] = Query(default=None),
-    radius_mi: int = Query(default=50),
-    limit: int = Query(default=20, ge=1, le=100),
-):
-    results: List[dict] = []
-    with get_session() as session:
-        query = (
-            session.query(Listing, ListingScore.value)
-            .join(ListingScore, Listing.id == ListingScore.listing_id)
-            .filter(ListingScore.metric == "deal_score")
-        )
-        if category:
-            pattern = f"%{category.lower()}%"
-            query = query.filter(
-                or_(
-                    Listing.category.ilike(pattern),
-                    Listing.title.ilike(pattern),
-                    Listing.description.ilike(pattern),
-                )
-            )
-        query = query.order_by(ListingScore.value.desc()).limit(limit * 3)
-        candidates = query.all()
-
-        for listing, score in candidates:
-            coords = tuple(listing.location.get("coords", (0, 0)))  # type: ignore[assignment]
-            distance = (
-                haversine_distance(coords[0], coords[1], 37.3382, -121.8863)
-                if coords and coords[0] and coords[1]
-                else 0
-            )
-            if distance > radius_mi:
-                continue
-            if price_max is not None and listing.price > price_max:
-                continue
-            results.append(
-                {
-                    "id": listing.id,
-                    "title": listing.title,
-                    "price": listing.price,
-                    "condition": listing.condition.value if listing.condition else None,
-                    "category": listing.category,
-                    "deal_score": score,
-                    "distance_mi": round(distance, 2),
-                    "url": listing.url,
-                    "thumbnail_url": listing.thumbnail_url,
-                }
-            )
-            if len(results) >= limit:
-                break
-    return results
-
+# BUYER ENDPOINT (PARKED)
+# Restore if FEATURE_BUYER=true
+# @app.get("/listings")
+# async def public_listings(...):
+#     """Fetch marketplace deal listings for buyers"""
+#     ...
 
 # Authentication routes
 app.include_router(auth_router)
 
-# Core API routes (marketplace data + user content)
-app.include_router(listings_router)
+# Core seller routes (MVP)
 app.include_router(my_items_router)
 app.include_router(orders_router)
-app.include_router(comps_router)
+app.include_router(comps_router)  # Used for pricing suggestions
 app.include_router(marketplace_accounts_router)
-app.include_router(notification_preferences_router)
-app.include_router(push_notifications_router)
-app.include_router(deal_alerts_router)
 app.include_router(inventory_router)
 
-# Marketplace and seller routes
+# Seller workflows
 app.include_router(
     snap_router,
     prefix="/seller",
@@ -298,40 +249,29 @@ app.include_router(
     tags=["seller"],
     dependencies=[Depends(role_from_path_dependency)],
 )
-app.include_router(
-    buyer_router,
-    prefix="/buyer",
-    tags=["buyer"],
-    dependencies=[Depends(role_from_path_dependency)],
-)
-app.include_router(api_buyer_routes.router)
-app.include_router(api_seller_routes.router)
+
+# OAuth integrations
 app.include_router(ebay_oauth_router, prefix="/ebay", tags=["ebay"])
 app.include_router(facebook_oauth_router)
 app.include_router(offerup_oauth_router)
+
+# Admin/utility routes
+app.include_router(api_seller_routes.router)
 app.include_router(tasks_router, prefix="/tasks", tags=["tasks"])
 app.include_router(setup_router, prefix="/setup", tags=["setup"])
 
+# Buyer routes (PARKED - restore if FEATURE_BUYER=true)
+# app.include_router(listings_router)
+# app.include_router(notification_preferences_router)
+# app.include_router(push_notifications_router)
+# app.include_router(deal_alerts_router)
+# app.include_router(buyer_router, prefix="/buyer", tags=["buyer"], dependencies=[Depends(role_from_path_dependency)])
+# app.include_router(api_buyer_routes.router)
 
-@app.post("/scan/run")
-async def trigger_scan_run(live: int = Query(default=0), blocking: int = Query(default=0)):
-    is_live = bool(live)
 
-    if bool(blocking):
-        # Synchronous/blocking scan for immediate results
-        from app.buyer.scan_exec import scan_now
-        counts = scan_now(live=is_live)
-        return {
-            "mode": "blocking",
-            "live": is_live,
-            "total": counts["total"],
-            "new": counts["new"],
-            "updated": counts["updated"],
-            "skipped": counts["skipped"],
-        }
-
-    # Default: async/enqueued scan
-    task = celery_app.send_task(
-        "app.tasks.scan_all.run_scan_all", kwargs={"live": is_live}
-    )
-    return {"mode": "enqueued", "task_id": task.id, "live": is_live}
+# BUYER SCAN ENDPOINT (PARKED)
+# Restore if FEATURE_BUYER=true
+# @app.post("/scan/run")
+# async def trigger_scan_run(...):
+#     """Trigger marketplace scanning for buyer deal discovery"""
+#     ...

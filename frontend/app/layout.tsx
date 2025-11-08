@@ -8,8 +8,8 @@ import FirstRunChecklist from "../components/FirstRunChecklist";
 import PwaInstall from "../components/PwaInstall";
 
 export const metadata: Metadata = {
-  title: "Deal Scout",
-  description: "Two-sided marketplace assistant for couches and kitchen islands.",
+  title: "Deal Scout - Cross-Post to Multiple Marketplaces",
+  description: "Upload a photo and cross-post your items to eBay, Facebook Marketplace, and OfferUp instantly.",
   manifest: "/manifest.webmanifest",
   icons: {
     icon: [
@@ -53,17 +53,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <div className="flex flex-1 flex-wrap items-center justify-end gap-4">
                 <nav className="flex items-center gap-4 text-sm font-medium text-slate-700">
                   <a href="/" className="hover:text-brand">
-                    Dashboard
-                  </a>
-                  <a href="/buyer" className="hover:text-brand">
-                    Buyer Feed
+                    Home
                   </a>
                   <a href="/seller" className="hover:text-brand">
                     Sell an Item
                   </a>
                 </nav>
                 <PwaInstall />
-                <DemoToggle />
               </div>
             </div>
           </header>
