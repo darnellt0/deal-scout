@@ -123,8 +123,12 @@ app.add_middleware(PathModeMiddleware)
 
 role_from_path_dependency = ensure_role_from_path()
 
+# Safely mount static files only if directory exists
 static_dir = Path(__file__).resolve().parent.parent / "static"
-app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+else:
+    logger.warning("Static directory %s not found; skipping static mount.", static_dir)
 
 REQUEST_COUNTER = Counter(
     "deal_scout_requests_total", "Total HTTP requests", ["method", "path", "status"]

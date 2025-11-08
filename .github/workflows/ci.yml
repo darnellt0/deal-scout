@@ -16,6 +16,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Ensure static directory exists
+        run: mkdir -p backend/static
+
       - name: Install backend dependencies
         run: pip install -r backend/requirements.txt
 
@@ -23,9 +26,10 @@ jobs:
         run: python -m compileall backend/app
 
       - name: Run backend tests
-        run: pytest -q
+        run: cd backend && pytest -q
         env:
-          PYTHONPATH: backend
+          PYTHONPATH: .
+        working-directory: backend
 
       - name: Lint docker compose
         run: docker compose -f docker-compose.yml config
