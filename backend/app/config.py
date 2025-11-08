@@ -82,7 +82,17 @@ class Settings(BaseSettings):
     twilio_auth_token: str = Field("", json_schema_extra={"env": "TWILIO_AUTH_TOKEN"})
     twilio_from: str = Field("", json_schema_extra={"env": "TWILIO_FROM"})
     alert_sms_to: str = Field("", json_schema_extra={"env": "ALERT_SMS_TO"})
-# Facebook Marketplace    facebook_app_id: str = Field("", json_schema_extra={"env": "FACEBOOK_APP_ID"})    facebook_app_secret: str = Field("", json_schema_extra={"env": "FACEBOOK_APP_SECRET"})    # Offerup    offerup_client_id: str = Field("", json_schema_extra={"env": "OFFERUP_CLIENT_ID"})    offerup_client_secret: str = Field("", json_schema_extra={"env": "OFFERUP_CLIENT_SECRET"})    # Backend URL for OAuth callbacks    backend_url: str = Field("http://localhost:8000", json_schema_extra={"env": "BACKEND_URL"})
+
+    # Facebook Marketplace
+    facebook_app_id: str = Field("", json_schema_extra={"env": "FACEBOOK_APP_ID"})
+    facebook_app_secret: str = Field("", json_schema_extra={"env": "FACEBOOK_APP_SECRET"})
+
+    # Offerup
+    offerup_client_id: str = Field("", json_schema_extra={"env": "OFFERUP_CLIENT_ID"})
+    offerup_client_secret: str = Field("", json_schema_extra={"env": "OFFERUP_CLIENT_SECRET"})
+
+    # Backend URL for OAuth callbacks
+    backend_url: str = Field("http://localhost:8000", json_schema_extra={"env": "BACKEND_URL"})
 
     # Seller/Snap Studio
     legal_mode: str = Field("api_only", json_schema_extra={"env": "LEGAL_MODE"})

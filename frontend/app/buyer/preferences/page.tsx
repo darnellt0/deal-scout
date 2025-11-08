@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import useSWR from "swr";
 import {
   NotificationPreferences,
@@ -42,7 +42,7 @@ export default function NotificationPreferencesPage() {
   const [maxPerDay, setMaxPerDay] = useState(10);
 
   // Initialize from preferences when loaded
-  useState(() => {
+  useEffect(() => {
     if (prefs) {
       setSelectedChannels(prefs.channels);
       setFrequency(prefs.frequency);
@@ -52,7 +52,7 @@ export default function NotificationPreferencesPage() {
       setQuietEnd(prefs.quiet_hours_end || "08:00");
       setMaxPerDay(prefs.max_per_day);
     }
-  });
+  }, [prefs]);
 
   // Update channels
   const handleUpdateChannels = useCallback(

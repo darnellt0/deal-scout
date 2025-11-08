@@ -23,9 +23,11 @@ jobs:
         run: python -m compileall backend/app
 
       - name: Run backend tests
-        run: pytest -q
+        working-directory: backend
+        run: pytest -v --cov=app --cov-report=term
         env:
-          PYTHONPATH: backend
+          DATABASE_URL: "sqlite+pysqlite:///./test.db"
+          PYTHONPATH: .
 
       - name: Lint docker compose
         run: docker compose -f docker-compose.yml config

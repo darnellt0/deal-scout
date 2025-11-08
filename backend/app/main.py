@@ -21,6 +21,7 @@ from app.core.db import get_session, engine
 from app.core.models import Base, Listing, ListingScore
 from app.core.utils import haversine_distance
 from app.core.exception_handlers import register_exception_handlers
+from app.middleware.rate_limiting import setup_rate_limiting
 from app.buyer.routes import router as buyer_router
 from app.routes.auth import router as auth_router
 from app.routes.ebay_oauth import router as ebay_oauth_router
@@ -96,6 +97,9 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+# Setup rate limiting
+setup_rate_limiting(app)
 
 static_dir = Path(__file__).resolve().parent.parent / "static"
 app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
