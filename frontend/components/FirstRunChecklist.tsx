@@ -20,6 +20,9 @@ type StatusResponse = {
 const STATUS_POLL_INTERVAL = 15000; // 15 seconds
 const INITIAL_POLL_DURATION = 120000; // 2 minutes
 
+// Get API base URL from environment
+const API_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+
 export default function FirstRunChecklist() {
   const { push } = useToast();
   const [status, setStatus] = useState<StatusResponse | null>(null);
@@ -31,7 +34,7 @@ export default function FirstRunChecklist() {
   // Fetch status from backend
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch("/setup/status");
+      const res = await fetch(`${API_URL}/setup/status`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data: StatusResponse = await res.json();
       setStatus(data);
@@ -47,7 +50,7 @@ export default function FirstRunChecklist() {
   // Check if dismissed
   const checkDismissed = useCallback(async () => {
     try {
-      const res = await fetch("/setup/is-dismissed");
+      const res = await fetch(`${API_URL}/setup/is-dismissed`);
       if (!res.ok) return;
       const data = await res.json();
       setDismissed(data.dismissed);
@@ -97,7 +100,7 @@ export default function FirstRunChecklist() {
       localStorage.setItem("demoMode", "off");
 
       // Call blocking live scan
-      const res = await fetch("/scan/run?live=1&blocking=1", {
+      const res = await fetch(`${API_URL}/scan/run?live=1&blocking=1`, {
         method: "POST",
       });
 
@@ -133,7 +136,7 @@ export default function FirstRunChecklist() {
   // Handle dismiss
   const handleDismiss = useCallback(async () => {
     try {
-      await fetch("/setup/dismiss", { method: "POST" });
+      await fetch(`${API_URL}/setup/dismiss`, { method: "POST" });
     } catch (err) {
       console.error("Failed to dismiss:", err);
     }
@@ -243,7 +246,7 @@ export default function FirstRunChecklist() {
             {scanning ? "Scanning..." : "Run live scan now"}
           </button>
           <a
-            href="/ebay/authorize"
+            href={`${API_URL}/ebay/authorize`}
             target="_blank"
             rel="noopener noreferrer"
             className="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 transition"
