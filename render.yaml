@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: deal-scout-backend
+    runtime: docker
+    region: oregon
+    plan: free
+    scaling:
+      min_instances: 1
+      max_instances: 1
+    build:
+      dockerfilePath: ./backend/Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: deal-scout-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        value: 7f8e9d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e3d4c5b6a7
+      - key: JWT_EXPIRY_MINUTES
+        value: "60"
+      - key: CORS_ORIGINS
+        value: https://deal-scout.vercel.app,http://localhost:3000
+      - key: ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: CELERY_ENABLED
+        value: "false"
+      - key: SINGLE_USER_ID
+        value: "0"
+      - key: REDIS_URL
+        value: redis://localhost:6379
+    routes:
+      - type: http
+        source: /
+    healthCheckPath: /health
+    healthCheckInterval: 30
+
+databases:
+  - name: deal-scout-db
+    plan: free
+    region: oregon

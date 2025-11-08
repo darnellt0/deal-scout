@@ -11,7 +11,10 @@ RUN apt-get update \
 
 COPY pyproject.toml ./
 
-RUN pip install --no-cache-dir ".[prod]"
+# Install dependencies with explicit psycopg2 binary for production
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel && \
+    pip install --no-cache-dir "psycopg2-binary>=2.9" && \
+    pip install --no-cache-dir ".[prod]"
 
 COPY app ./app
 COPY alembic ./alembic
