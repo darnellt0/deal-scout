@@ -53,3 +53,6 @@ include = ["app*"]
 
 [tool.pytest.ini_options]
 addopts = "-p no:cacheprovider"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+norecursedirs = [".git", ".tox", "dist", "build", "*.egg"]
