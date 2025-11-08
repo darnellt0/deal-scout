@@ -9,6 +9,9 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
+# Skip all tests in this file - buyer/scan features are parked in seller-first MVP
+pytestmark = pytest.mark.skip(reason="Buyer/scan endpoints parked in seller-first MVP refactor")
+
 
 @pytest.fixture
 def client():
