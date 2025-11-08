@@ -21,6 +21,21 @@ pnpm-debug.log*
 .vercel/
 nul
 
+# Test artifacts
+*.db
+.coverage
+htmlcov/
+
+# Python package metadata
+*.egg-info/
+dist/
+build/
+
+# PWA generated files
+frontend/public/sw.js
+frontend/public/workbox-*.js
+frontend/public/fallback-*.js
+
 # Environment files
 .env.local
 .env.development.local
