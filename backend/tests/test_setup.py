@@ -224,13 +224,13 @@ class TestTestNotification:
 
         mock_send_email.return_value = True
 
-        with patch("app.setup.router.send_test_notification") as mock_send:
-            from app.setup.router import send_test_notification
+        from app.setup.router import send_test_notification
 
-            result = send_test_notification()
+        result = send_test_notification()
 
-            # Email channel should be in results
-            assert "email" in result
+        # Email channel should be in results
+        assert "email" in result
+        assert isinstance(result, dict)
 
     @patch("app.setup.router.send_discord")
     @patch("app.setup.router.settings")
@@ -243,13 +243,13 @@ class TestTestNotification:
 
         mock_send_discord.return_value = True
 
-        with patch("app.setup.router.send_test_notification") as mock_send:
-            from app.setup.router import send_test_notification
+        from app.setup.router import send_test_notification
 
-            result = send_test_notification()
+        result = send_test_notification()
 
-            # Discord channel should be in results
-            assert "discord" in result
+        # Discord channel should be in results
+        assert "discord" in result
+        assert isinstance(result, dict)
 
 
 class TestDismissChecklist:
@@ -359,7 +359,7 @@ class TestCheckStatus:
     def test_database_check_success(self, mock_session):
         """Test database check when successful."""
         from app.setup.router import check_database
-        from sqlalchemy.orm import MagicMock
+        from unittest.mock import MagicMock
 
         mock_session_instance = MagicMock()
         mock_session.__enter__ = MagicMock(return_value=mock_session_instance)

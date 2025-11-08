@@ -1,17 +1,8 @@
-from sqlalchemy import Column, Integer, String, Table, ForeignKey
+from app.core.models import Role as CoreRole
+from app.core.models import user_roles_table
 
-from app.core.models import Base
+# Re-export from core to maintain compatibility
+Role = CoreRole
+user_roles = user_roles_table
 
-user_roles = Table(
-    "user_roles",
-    Base.metadata,
-    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
-    Column("role_id", Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
-)
-
-
-class Role(Base):
-    __tablename__ = "roles"
-
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(20), unique=True, nullable=False)  # 'buyer' | 'seller'
+__all__ = ["Role", "user_roles"]

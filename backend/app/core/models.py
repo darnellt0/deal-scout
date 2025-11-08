@@ -15,6 +15,7 @@ from sqlalchemy import (
     JSON,
     Numeric,
     String,
+    Table,
     Text,
     UniqueConstraint,
 )
@@ -43,6 +44,23 @@ class UserRole(enum.Enum):
     guest = "guest"
 
 
+# Many-to-many association table for User and Role
+user_roles_table = Table(
+    "user_roles",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("role_id", Integer, ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
+class Role(Base):
+    """Role model for many-to-many user roles."""
+    __tablename__ = "roles"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+
+
 class User(Base):
     """User account model for authentication and authorization."""
     __tablename__ = "users"
@@ -62,6 +80,18 @@ class User(Base):
         DateTime, default=utcnow, onupdate=utcnow
     )
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # Many-to-many relationship with Role
+    roles: Mapped[List["Role"]] = relationship(
+        "Role",
+        secondary=user_roles_table,
+        lazy="selectin",
+    )
+
+    @property
+    def role_names(self) -> List[str]:
+        """Return list of role names from the many-to-many relationship."""
+        return [role.name for role in self.roles]
 
 
 class Listing(Base):
