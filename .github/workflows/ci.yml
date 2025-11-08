@@ -19,13 +19,16 @@ jobs:
       - name: Install backend dependencies
         run: pip install -r backend/requirements.txt
 
+      - name: Ensure static directory exists
+        run: mkdir -p backend/static
+
       - name: Compile backend sources
         run: python -m compileall backend/app
 
       - name: Run backend tests
-        run: pytest -q
+        run: cd backend && pytest -q
         env:
-          PYTHONPATH: backend
+          PYTHONPATH: .
 
       - name: Lint docker compose
         run: docker compose -f docker-compose.yml config
