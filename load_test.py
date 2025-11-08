@@ -4,7 +4,15 @@ Installation: pip install locust
 Run: locust -f load_test.py --host http://localhost:8000
 """
 
-from locust import HttpUser, task, between, events
+# Guard: fail fast if Locust is not installed
+try:
+    from locust import HttpUser, task, between, events
+except ImportError as e:
+    raise SystemExit(
+        "Locust is not installed. Install with: pip install locust\n"
+        "Or run dedicated load tests separately from unit CI."
+    ) from e
+
 import random
 import json
 from datetime import datetime, timedelta
