@@ -86,6 +86,12 @@ class Settings(BaseSettings):
     alert_sms_to: str = Field("", json_schema_extra={"env": "ALERT_SMS_TO"})
 # Facebook Marketplace    facebook_app_id: str = Field("", json_schema_extra={"env": "FACEBOOK_APP_ID"})    facebook_app_secret: str = Field("", json_schema_extra={"env": "FACEBOOK_APP_SECRET"})    # Offerup    offerup_client_id: str = Field("", json_schema_extra={"env": "OFFERUP_CLIENT_ID"})    offerup_client_secret: str = Field("", json_schema_extra={"env": "OFFERUP_CLIENT_SECRET"})    # Backend URL for OAuth callbacks    backend_url: str = Field("http://localhost:8000", json_schema_extra={"env": "BACKEND_URL"})
 
+    # Feature Flags (Seller-First MVP)
+    feature_buyer: bool = Field(False, json_schema_extra={"env": "FEATURE_BUYER"})
+    feature_bg_clean: bool = Field(False, json_schema_extra={"env": "FEATURE_BG_CLEAN"})
+    feature_adv_vision: bool = Field(False, json_schema_extra={"env": "FEATURE_ADV_VISION"})
+    feature_live_pricing: bool = Field(False, json_schema_extra={"env": "FEATURE_LIVE_PRICING"})
+
     # Seller/Snap Studio
     legal_mode: str = Field("api_only", json_schema_extra={"env": "LEGAL_MODE"})
     headless_enabled: bool = Field(False, json_schema_extra={"env": "HEADLESS_ENABLED"})
