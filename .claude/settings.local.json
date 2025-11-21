@@ -5,7 +5,18 @@
       "Bash(powershell -NoProfile -Command \"taskkill /F /IM node.exe 2>&1\")",
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(git checkout:*)",
+      "Bash(git pull:*)",
+      "Bash(git merge:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(cd:*)",
+      "Bash(docker compose:*)",
+      "Bash(cat:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(gh pr create:*)"
     ],
     "deny": [],
     "ask": []
